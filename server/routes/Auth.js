@@ -16,7 +16,7 @@ export function registerAuth(app, db) {
     const result = await db.query('SELECT count(*) FROM voip.users');
     res.json({ needsSetup: Number(result.rows[0].count) === 0, database: 'connected' });
   });
-  const startSession = async (res, user) => {
+  const startSession = async (req, res, user) => {
     const token = randomBytes(32).toString('hex');
     await db.query('DELETE FROM voip.sessions WHERE expires_at < now()');
     await db.query(
@@ -25,8 +25,8 @@ export function registerAuth(app, db) {
     );
     res.cookie('voip_session', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: req.secure || req.get('x-forwarded-proto') === 'https',
+      sameSite: 'lax',
       maxAge: 12 * 60 * 60 * 1000,
       path: '/',
     });
@@ -72,7 +72,7 @@ export function registerAuth(app, db) {
     } finally {
       client.release();
     }
-    await startSession(res, user);
+    await startSession(req, res, user);
   });
   app.post('/api/login', authLimiter, async (req, res) => {
     const data = z.object({ email, password: z.string().min(1).max(128) }).parse(req.body);
@@ -81,7 +81,7 @@ export function registerAuth(app, db) {
     ).rows[0];
     if (!user || !(await bcrypt.compare(data.password, user.password_hash)))
       return res.status(401).json({ error: 'Email or password is incorrect.' });
-    await startSession(res, { id: user.id, name: user.name, email: user.email, role: user.role });
+    await startSession(req, res, { id: user.id, name: user.name, email: user.email, role: user.role });
   });
   app.use('/api', async (req, res, next) => {
     const token = req.cookies.voip_session;
