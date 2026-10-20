@@ -17,6 +17,8 @@ export function createApp(db) {
   app.use(
     helmet({
       contentSecurityPolicy: false,
+      crossOriginOpenerPolicy: false,
+      originAgentCluster: false,
       hsts: false,
     }),
   );
@@ -25,17 +27,39 @@ export function createApp(db) {
     res.set('Cache-Control', 'no-store');
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
       const origin = req.get('origin');
-      const host = req.get('host');
-      const allowed = [
-        process.env.APP_ORIGIN,
-        'http://127.0.0.1:5173',
-        'http://localhost:5173',
-        'http://127.0.0.1:3001',
-        'http://localhost:3001',
-      ].filter(Boolean);
-      const isSameHost =
-        origin && host && (origin === `http://${host}` || origin === `https://${host}`);
-      if (req.get('x-voip-request') !== '1' || (origin && !isSameHost && !allowed.includes(origin)))
+      let isAllowed = !origin;
+      if (origin) {
+        try {
+          const originUrl = new URL(origin);
+          const reqHost = req.get('host') || '';
+          const reqHostname = req.hostname || '';
+          const fwdHost = req.get('x-forwarded-host') || '';
+          const allowed = [
+            process.env.APP_ORIGIN,
+            'http://127.0.0.1:5173',
+            'http://localhost:5173',
+            'http://127.0.0.1:3001',
+            'http://localhost:3001',
+          ].filter(Boolean);
+          const matchesConfig = allowed.some((a) => {
+            try {
+              const u = new URL(a);
+              return u.origin === originUrl.origin || u.hostname === originUrl.hostname;
+            } catch {
+              return a === origin;
+            }
+          });
+          const matchesHost =
+            originUrl.host === reqHost ||
+            originUrl.hostname === reqHostname ||
+            (fwdHost &&
+              (originUrl.host === fwdHost || originUrl.hostname === fwdHost.split(':')[0]));
+          isAllowed = matchesConfig || matchesHost;
+        } catch {
+          isAllowed = false;
+        }
+      }
+      if (req.get('x-voip-request') !== '1' || !isAllowed)
         return res.status(403).json({ error: 'Request origin not allowed.' });
     }
     next();
