@@ -25,13 +25,17 @@ export function createApp(db) {
     res.set('Cache-Control', 'no-store');
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
       const origin = req.get('origin');
+      const host = req.get('host');
       const allowed = [
-        process.env.APP_ORIGIN || 'http://127.0.0.1:5173',
+        process.env.APP_ORIGIN,
+        'http://127.0.0.1:5173',
         'http://localhost:5173',
         'http://127.0.0.1:3001',
         'http://localhost:3001',
-      ];
-      if (req.get('x-voip-request') !== '1' || (origin && !allowed.includes(origin)))
+      ].filter(Boolean);
+      const isSameHost =
+        origin && host && (origin === `http://${host}` || origin === `https://${host}`);
+      if (req.get('x-voip-request') !== '1' || (origin && !isSameHost && !allowed.includes(origin)))
         return res.status(403).json({ error: 'Request origin not allowed.' });
     }
     next();
