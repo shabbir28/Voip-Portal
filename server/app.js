@@ -15,7 +15,10 @@ export function createApp(db) {
   const app = express();
   app.disable('x-powered-by');
   app.use(
-    helmet({ contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false }),
+    helmet({
+      contentSecurityPolicy: false,
+      hsts: false,
+    }),
   );
   app.use(express.json({ limit: '1mb' }), cookieParser());
   app.use('/api', (req, res, next) => {
