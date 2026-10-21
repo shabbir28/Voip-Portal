@@ -313,18 +313,27 @@
 }
 .entry-table .row-label {
   display: inline-block;
-  max-width: 155px;
+  max-width: 215px;
   vertical-align: middle;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  color: #0f172a;
 }
 .entry-table .row-edit {
-  padding: 4px;
-  margin-left: 5px;
+  padding: 3px 5px;
+  margin-left: 4px;
   vertical-align: middle;
-  background: #e4e9f2;
-  border: 1px solid #d0d9e6;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
   float: right;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+.entry-table tr:hover .row-edit {
+  opacity: 1;
 }
 .entry-table .row-edit svg {
   margin: 0 !important;
@@ -423,6 +432,6 @@
     font-size: 8px;
   }
   .entry-table .row-label {
-    max-width: 125px;
+    max-width: 195px;
   }
 }

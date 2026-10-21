@@ -5,7 +5,13 @@ import { aggregateVendors } from '../../shared/vendors.js';
 import { money } from '../utils/format.js';
 import VendorSpendCards from './VendorSpendCards.jsx';
 import { downloadVendors } from '../utils/vendorDownload.js';
-export default function VendorOverview({ range, onOpen }) {
+export default function VendorOverview({
+  range,
+  onOpen,
+  isSuperAdmin = false,
+  allUsers = false,
+  onVendorTotalChange,
+}) {
   const [reports, setReports] = useState([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(''),
@@ -14,7 +20,8 @@ export default function VendorOverview({ range, onOpen }) {
     let live = true;
     setLoading(true);
     setError('');
-    api(`/vendor-reports?from=${range.from}&to=${range.to}`)
+    const endpoint = isSuperAdmin && allUsers ? '/vendor-reports/all' : '/vendor-reports';
+    api(`${endpoint}?from=${range.from}&to=${range.to}`)
       .then((r) => {
         if (live) setReports(r);
       })
@@ -27,22 +34,39 @@ export default function VendorOverview({ range, onOpen }) {
     return () => {
       live = false;
     };
-  }, [range.from, range.to, retry]);
+  }, [range.from, range.to, retry, isSuperAdmin, allUsers]);
   const summary = aggregateVendors(reports);
+
+  useEffect(() => {
+    if (!loading && !error) {
+      onVendorTotalChange?.(summary.total);
+    }
+  }, [summary.total, loading, error, onVendorTotalChange]);
+
   return (
     <section className="vendor-overview panel">
       <div className="panel-heading">
         <div>
           <h3>
-            <Building2 size={17} /> Vendor spend
+            <Building2 size={17} />{' '}
+            {allUsers && isSuperAdmin ? 'Overall Vendor Spend (All Admins)' : 'Vendor spend'}
           </h3>
-          <p>Hourly vendor reports · Separate from dialer spend</p>
+          <p>
+            {allUsers && isSuperAdmin
+              ? 'Hourly vendor reports across all Admins · Separate from dialer spend'
+              : 'Hourly vendor reports · Separate from dialer spend'}
+          </p>
         </div>
         <div className="save-controls">
           <button
             className="secondary"
             disabled={loading || !!error || !reports.length}
-            onClick={() => downloadVendors(reports, `vendor-${range.from}-to-${range.to}`)}
+            onClick={() =>
+              downloadVendors(
+                reports,
+                `vendor-${allUsers ? 'all-' : ''}${range.from}-to-${range.to}`,
+              )
+            }
           >
             <Download size={14} /> Download vendors
           </button>
@@ -77,8 +101,9 @@ export default function VendorOverview({ range, onOpen }) {
             <VendorSpendCards vendors={summary.vendors} total={summary.total} />
           ) : (
             <p className="vendor-message">
-              No vendor reports in these dates. Create a vendor report to start tracking hourly
-              spend.
+              {allUsers && isSuperAdmin
+                ? 'No vendor reports submitted by any admins in these dates.'
+                : 'No vendor reports in these dates. Create a vendor report to start tracking hourly spend.'}
             </p>
           )}
         </>

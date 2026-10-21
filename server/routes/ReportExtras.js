@@ -1,4 +1,4 @@
-import { presentReport } from '../../shared/time.js';
+import { REPORT_TIMEZONE, presentReport } from '../../shared/time.js';
 import { reportDateSql } from '../config/reportDate.js';
 import { z } from 'zod';
 import { date, id, text } from '../validation/schemas.js';
@@ -34,6 +34,57 @@ export function registerReportExtras(app, db) {
       }
       await client.query('COMMIT');
       res.json(reports.map((r) => ({ ...presentReport(r), entries: grouped.get(r.id) || [] })));
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  });
+  app.get('/api/reports/range/all', async (req, res) => {
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Access denied. Super admin required.' });
+    }
+    const range = z
+      .object({ from: date, to: date })
+      .refine((r) => r.from <= r.to, 'Start must not be after end')
+      .refine(
+        (r) => (new Date(r.to) - new Date(r.from)) / 86400000 <= 365,
+        'Maximum range is 366 days',
+      )
+      .parse(req.query);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      const reports = (
+        await client.query(
+          `SELECT s.id,s.name,s.config,s.version,to_char(s.report_date,'YYYY-MM-DD') report_date,s.created_by,u.name AS creator_name FROM voip.sheets s LEFT JOIN voip.users u ON s.created_by=u.id WHERE (((s.report_date + (s.config->'slots'->0->>'start')::time) AT TIME ZONE COALESCE(s.config->>'timezone','Asia/Karachi')) AT TIME ZONE '${REPORT_TIMEZONE}')::date BETWEEN $1::date AND $2::date ORDER BY s.report_date,s.id`,
+          [range.from, range.to],
+        )
+      ).rows;
+      if (!reports.length) {
+        await client.query('COMMIT');
+        return res.json([]);
+      }
+      const entries = (
+        await client.query(
+          'SELECT sheet_id,dialer_id,slot,amount FROM voip.entries WHERE sheet_id=ANY($1::int[])',
+          [reports.map((r) => r.id)],
+        )
+      ).rows;
+      const grouped = new Map();
+      for (const e of entries) {
+        if (!grouped.has(e.sheet_id)) grouped.set(e.sheet_id, []);
+        grouped.get(e.sheet_id).push(e);
+      }
+      await client.query('COMMIT');
+      res.json(
+        reports.map((r) => ({
+          ...presentReport(r),
+          creator_name: r.creator_name,
+          entries: grouped.get(r.id) || [],
+        })),
+      );
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;

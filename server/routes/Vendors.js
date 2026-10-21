@@ -81,6 +81,20 @@ export function registerVendors(app, db) {
       ).rows.map(output),
     );
   });
+  app.get('/api/vendor-reports/all', async (req, res) => {
+    if (req.user.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Access denied. Super admin required.' });
+    }
+    const range = dateRange.parse(req.query);
+    res.json(
+      (
+        await db.query(
+          `SELECT vr.id,vr.name,to_char(vr.report_date,'YYYY-MM-DD') AS report_date,vr.config,vr.entries,vr.version,vr.created_by,u.name AS creator_name,vr.created_at,vr.updated_at FROM voip.vendor_reports vr LEFT JOIN voip.users u ON vr.created_by=u.id WHERE vr.report_date BETWEEN $1 AND $2 ORDER BY vr.report_date DESC,vr.id DESC`,
+          [range.from, range.to],
+        )
+      ).rows.map(output),
+    );
+  });
   app.get('/api/vendor-reports/:id', async (req, res) => {
     const report = (
       await db.query(`${selectReports} WHERE id=$1 AND created_by=$2`, [

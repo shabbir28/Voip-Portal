@@ -137,6 +137,18 @@ export async function verifyRoles(t, app, superAgent, mutate, db) {
       assert.ok(!('activity' in report));
       assert.equal((await superAgent.get(endpoint)).status, 404);
       assert.equal((await admin.get(`/api/reports/range?from=${day}&to=${day}`)).status, 200);
+
+      // Verify all-users endpoints: admin is forbidden, super admin sees all data with creator_name
+      assert.equal((await admin.get(`/api/reports/range/all?from=${day}&to=${day}`)).status, 403);
+      assert.equal((await admin.get(`/api/vendor-reports/all?from=${day}&to=${day}`)).status, 403);
+      const superReportsAll = await superAgent.get(`/api/reports/range/all?from=${day}&to=${day}`);
+      assert.equal(superReportsAll.status, 200);
+      assert.ok(superReportsAll.body.length > 0);
+      assert.ok(superReportsAll.body.some((r) => r.creator_name === 'Operations Admin'));
+      const superVendorsAll = await superAgent.get(`/api/vendor-reports/all?from=${day}&to=${day}`);
+      assert.equal(superVendorsAll.status, 200);
+      assert.ok(superVendorsAll.body.length > 0);
+      assert.ok(superVendorsAll.body.some((r) => r.creator_name === 'Operations Admin'));
     },
   );
   await t.test(

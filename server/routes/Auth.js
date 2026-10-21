@@ -81,7 +81,12 @@ export function registerAuth(app, db) {
     ).rows[0];
     if (!user || !(await bcrypt.compare(data.password, user.password_hash)))
       return res.status(401).json({ error: 'Email or password is incorrect.' });
-    await startSession(req, res, { id: user.id, name: user.name, email: user.email, role: user.role });
+    await startSession(req, res, {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
   });
   app.use('/api', async (req, res, next) => {
     const token = req.cookies.voip_session;

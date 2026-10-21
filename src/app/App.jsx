@@ -24,6 +24,8 @@ import {
   LayoutDashboard,
   LoaderCircle,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   Radio,
   RefreshCw,
@@ -76,13 +78,31 @@ export default function App() {
     setPage(next);
   }
   const [rangeReports, setRangeReports] = useState([]),
+    [allRangeReports, setAllRangeReports] = useState([]),
     [rangeLoading, setRangeLoading] = useState(false),
+    [overviewScope, setOverviewScope] = useState('all'),
     [rowModal, setRowModal] = useState(null);
   const [editCatalog, setEditCatalog] = useState(null),
     [editRow, setEditRow] = useState(null),
     [showDeleted, setShowDeleted] = useState(false),
     [directoryCatalog, setDirectoryCatalog] = useState({ campaigns: [], dialers: [] }),
     [directoryBusy, setDirectoryBusy] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('voip_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  function toggleSidebar() {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('voip_sidebar_collapsed', String(next));
+      } catch {}
+      return next;
+    });
+  }
   useEffect(() => {
     let ignore = false;
     if (!showDeleted) {
@@ -246,9 +266,17 @@ export default function App() {
     let cancelled = false;
     setRangeLoading(true);
     setRangeReports([]);
-    api(`/reports/range?from=${range.from}&to=${range.to}`)
-      .then((data) => {
-        if (!cancelled) setRangeReports(data);
+    setAllRangeReports([]);
+    const requests = [api(`/reports/range?from=${range.from}&to=${range.to}`)];
+    if (isSuperAdmin) {
+      requests.push(api(`/reports/range/all?from=${range.from}&to=${range.to}`));
+    }
+    Promise.all(requests)
+      .then(([userData, allData]) => {
+        if (!cancelled) {
+          setRangeReports(userData || []);
+          if (allData) setAllRangeReports(allData);
+        }
       })
       .catch((e) => {
         if (!cancelled) fail(e);
@@ -259,7 +287,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [user, range.from, range.to, sheets]);
+  }, [user, range.from, range.to, sheets, isSuperAdmin]);
   useEffect(() => {
     setSelectedId((previous) =>
       visibleSheets.some((s) => s.id === previous) ? previous : visibleSheets[0]?.id || null,
@@ -335,8 +363,15 @@ export default function App() {
     }
   }
   function exportCsv() {
-    if (page === 'overview') downloadReports(rangeReports, `voip-${range.from}-to-${range.to}`);
-    else if (sheet) downloadReports([sheet], `voip-${sheet.report_date}-${sheet.id}`, true);
+    if (page === 'overview') {
+      const activeList = isSuperAdmin && overviewScope === 'all' ? allRangeReports : rangeReports;
+      downloadReports(
+        activeList,
+        `voip-${isSuperAdmin && overviewScope === 'all' ? 'all-' : ''}${range.from}-to-${range.to}`,
+      );
+    } else if (sheet) {
+      downloadReports([sheet], `voip-${sheet.report_date}-${sheet.id}`, true);
+    }
   }
   const liveEntries = withDraft(sheet, draft);
   const summary = sheet ? summarize(sheet.config, liveEntries) : null;
@@ -395,6 +430,7 @@ export default function App() {
           requestId.current++;
           setSheets([]);
           setRangeReports([]);
+          setAllRangeReports([]);
           setSheet(null);
           setSelectedId(null);
           setDraft({});
@@ -402,13 +438,14 @@ export default function App() {
           setNotice(null);
           setUser(u);
           setPage('overview');
+          setOverviewScope('all');
           setRange(getDatePresets()[0]);
           setStatus({ ...status, needsSetup: false });
         }}
       />
     );
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <aside className="sidebar">
         <Brand light />
         <div className="nav-label">WORKSPACE</div>
@@ -461,7 +498,16 @@ export default function App() {
       <div className="main-wrap">
         <header className="topbar">
           <div className="breadcrumb">
-            Workspace <ChevronRight size={14} />
+            <button
+              type="button"
+              className="sidebar-toggle-btn"
+              title={sidebarCollapsed ? 'Expand sidebar (show navigation)' : 'Collapse sidebar (full screen mode)'}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              onClick={toggleSidebar}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            </button>
+            <span>Workspace</span> <ChevronRight size={14} />
             <strong>{nav.find((n) => n[0] === page)?.[2]}</strong>
           </div>
           <div className="topbar-right">
@@ -642,10 +688,19 @@ export default function App() {
             <>
               <OverviewPage
                 vendorOverview={
-                  <VendorOverview range={range} onOpen={() => navigate('vendor-reports')} />
+                  <VendorOverview
+                    range={range}
+                    onOpen={() => navigate('vendor-reports')}
+                    isSuperAdmin={isSuperAdmin}
+                    allUsers={overviewScope === 'all'}
+                  />
                 }
                 catalog={catalog}
                 reports={rangeReports}
+                allReports={allRangeReports}
+                isSuperAdmin={isSuperAdmin}
+                scope={overviewScope}
+                onScopeChange={setOverviewScope}
                 loading={rangeLoading}
                 range={range}
                 onOpen={(id) => {

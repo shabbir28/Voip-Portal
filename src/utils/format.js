@@ -16,3 +16,10 @@ export const clockLabel = (t) => {
   const [h, m] = t.split(':').map(Number);
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 };
+export const clockParts = (t) => {
+  const [h, m] = t.split(':').map(Number);
+  return {
+    time: `${h % 12 || 12}:${String(m).padStart(2, '0')}`,
+    period: h >= 12 ? 'PM' : 'AM',
+  };
+};

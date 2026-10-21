@@ -7,6 +7,10 @@ import {
   ArrowRight,
   BarChart3,
   LoaderCircle,
+  Users,
+  User,
+  TrendingUp,
+  Award,
 } from 'lucide-react';
 import { BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Kpi from '../components/Kpi.jsx';
@@ -14,7 +18,18 @@ import CampaignSpendCards from '../components/CampaignSpendCards.jsx';
 import Filter from '../components/ReportFilters.jsx';
 import { aggregateReports } from '../utils/reports.js';
 import { money, prettyDate } from '../utils/format.js';
-export default function OverviewPage({ reports, loading, range, onOpen, catalog, vendorOverview }) {
+export default function OverviewPage({
+  reports = [],
+  allReports = [],
+  isSuperAdmin = false,
+  scope = 'all',
+  onScopeChange,
+  loading,
+  range,
+  onOpen,
+  catalog,
+  vendorOverview,
+}) {
   const [campaign, setCampaign] = useState('all'),
     [search, setSearch] = useState('');
   if (loading)
@@ -23,7 +38,8 @@ export default function OverviewPage({ reports, loading, range, onOpen, catalog,
         <LoaderCircle className="spin" size={17} /> Loading date-range insights…
       </div>
     );
-  const s = aggregateReports(reports),
+  const activeReports = isSuperAdmin && scope === 'all' ? allReports : reports;
+  const s = aggregateReports(activeReports),
     groups = [
       ...new Map(
         s.dialers.map((d) => [
@@ -40,16 +56,69 @@ export default function OverviewPage({ reports, loading, range, onOpen, catalog,
       (campaign === 'all' || String(d.campaign_id) === campaign) &&
       d.name.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const activeDays = s.days.length;
+  const dailyAverage = activeDays > 0 ? s.total / activeDays : 0;
+  const campaignTotals = groups
+    .map((g) => {
+      const amount =
+        s.dialers
+          .filter((d) => d.campaign_id === g.id)
+          .reduce((n, d) => n + Math.round(d.total * 100), 0) / 100;
+      return { ...g, amount };
+    })
+    .sort((a, b) => b.amount - a.amount);
+  const topCampaign = campaignTotals[0];
+  const topPercent =
+    s.total && topCampaign?.amount ? Math.round((topCampaign.amount / s.total) * 100) : 0;
+
   return (
     <>
+      {isSuperAdmin && (
+        <div className="overview-scope-banner">
+          <div className="scope-info">
+            <span className="scope-badge">
+              <Users size={14} /> SUPER ADMIN
+            </span>
+            <div>
+              <h3>{scope === 'all' ? 'All Admins Overview (Combined)' : 'My Reports Overview'}</h3>
+              <p>
+                {scope === 'all'
+                  ? 'Showing total VoIP spend, campaign breakdown, and vendor costs added by all admins'
+                  : 'Showing only reports created by your account'}
+              </p>
+            </div>
+          </div>
+          <div className="scope-toggle">
+            <button
+              type="button"
+              className={scope === 'all' ? 'active' : ''}
+              onClick={() => onScopeChange?.('all')}
+            >
+              <Users size={14} /> All Admins ({allReports.length})
+            </button>
+            <button
+              type="button"
+              className={scope === 'mine' ? 'active' : ''}
+              onClick={() => onScopeChange?.('mine')}
+            >
+              <User size={14} /> My Reports ({reports.length})
+            </button>
+          </div>
+        </div>
+      )}
       <div className="kpi-grid">
         <Kpi
-          title="VoIP spend"
+          title={isSuperAdmin && scope === 'all' ? 'Overall VoIP spend' : 'VoIP spend'}
           value={money(s.total)}
           icon={DollarSign}
           color="purple"
           badge="USD"
-          detail={`${range.from} — ${range.to}`}
+          detail={
+            isSuperAdmin && scope === 'all'
+              ? `All admins · ${range.from} — ${range.to}`
+              : `${range.from} — ${range.to}`
+          }
         />
         <Kpi
           title="Reporting dialers"
@@ -60,25 +129,33 @@ export default function OverviewPage({ reports, loading, range, onOpen, catalog,
           detail={`${groups.length} campaigns in this range`}
         />
         <Kpi
-          title="Daily reports"
-          value={s.reportCount}
-          icon={FileSpreadsheet}
+          title="Daily average spend"
+          value={money(dailyAverage)}
+          icon={TrendingUp}
           color="blue"
-          badge="REPORTS"
-          detail="All reports in selected dates"
+          badge="DAILY AVG"
+          detail={
+            activeDays > 0
+              ? `Across ${activeDays} reporting ${activeDays === 1 ? 'day' : 'days'}`
+              : 'No reporting days'
+          }
         />
         <Kpi
-          title="Entries completed"
-          value={`${s.expected ? Math.round((s.entered / s.expected) * 100) : 0}%`}
-          icon={CheckCheck}
+          title="Top campaign"
+          value={topCampaign && topCampaign.amount > 0 ? topCampaign.name : '—'}
+          icon={Award}
           color="amber"
-          badge="PROGRESS"
-          detail={`${s.entered} of ${s.expected} interval entries`}
+          badge={topCampaign && topCampaign.amount > 0 ? `${topPercent}% SHARE` : 'CAMPAIGN'}
+          detail={
+            topCampaign && topCampaign.amount > 0
+              ? `${money(topCampaign.amount)} VoIP spend`
+              : 'No campaign spend yet'
+          }
         />
       </div>
       <CampaignSpendCards groups={cardGroups} dialers={s.dialers} total={s.total} />
       {vendorOverview}
-      {!reports.length ? (
+      {!activeReports.length ? (
         <section className="panel range-empty">
           <CalendarEmpty />
           <h3>No reports for these dates</h3>
@@ -90,8 +167,16 @@ export default function OverviewPage({ reports, loading, range, onOpen, catalog,
             <section className="panel chart-panel">
               <div className="panel-heading">
                 <div>
-                  <h3>Daily VoIP spend</h3>
-                  <p>All selected reports, grouped by shift start date</p>
+                  <h3>
+                    {isSuperAdmin && scope === 'all'
+                      ? 'Overall daily VoIP spend'
+                      : 'Daily VoIP spend'}
+                  </h3>
+                  <p>
+                    {isSuperAdmin && scope === 'all'
+                      ? 'Combined spend across all admins, grouped by date'
+                      : 'All selected reports, grouped by shift start date'}
+                  </p>
                 </div>
                 <span className="chart-legend">
                   <i /> USD
@@ -236,12 +321,16 @@ export default function OverviewPage({ reports, loading, range, onOpen, catalog,
           <section className="panel range-reports">
             <div className="panel-heading">
               <div>
-                <h3>Reports in this range</h3>
+                <h3>
+                  {isSuperAdmin && scope === 'all'
+                    ? 'All reports in this range'
+                    : 'Reports in this range'}
+                </h3>
                 <p>Open a report to edit entries or download its spreadsheet</p>
               </div>
-              <span className="count-chip">{reports.length}</span>
+              <span className="count-chip">{activeReports.length}</span>
             </div>
-            {reports.map((r) => (
+            {activeReports.map((r) => (
               <button className="report-list-row" key={r.id} onClick={() => onOpen(r.id)}>
                 <span className="report-list-icon">
                   <FileSpreadsheet size={16} />
@@ -250,6 +339,9 @@ export default function OverviewPage({ reports, loading, range, onOpen, catalog,
                   <b>{r.name}</b>
                   <small>
                     {prettyDate(r.report_date)} · {r.config.dialers.length} dialers
+                    {r.creator_name && (
+                      <span className="creator-badge"> · by {r.creator_name}</span>
+                    )}
                   </small>
                 </span>
                 <span className="report-list-total">
