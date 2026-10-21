@@ -64,6 +64,14 @@ export async function migrate(db = pool) {
       user_id INTEGER NOT NULL REFERENCES voip.users(id), action TEXT NOT NULL,
       detail JSONB NOT NULL DEFAULT '{}', created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    CREATE TABLE IF NOT EXISTS voip.vendor_negative_reports (
+      id SERIAL PRIMARY KEY, name TEXT NOT NULL, report_date DATE NOT NULL,
+      config JSONB NOT NULL, entries JSONB NOT NULL DEFAULT '[]', version INTEGER NOT NULL DEFAULT 0,
+      created_by INTEGER NOT NULL REFERENCES voip.users(id),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS vendor_negative_reports_date_idx ON voip.vendor_negative_reports(report_date);
+    CREATE INDEX IF NOT EXISTS vendor_negative_reports_owner_date_idx ON voip.vendor_negative_reports(created_by,report_date);
     CREATE TABLE IF NOT EXISTS voip.schema_migrations (name TEXT PRIMARY KEY);
     ALTER TABLE voip.users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin','super_admin'));
     ALTER TABLE voip.users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;

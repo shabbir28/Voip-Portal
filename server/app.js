@@ -9,6 +9,7 @@ import { registerReports } from './routes/Reports.js';
 import { registerReportExtras } from './routes/ReportExtras.js';
 import { registerReportEditing } from './routes/ReportEditing.js';
 import { registerVendors } from './routes/Vendors.js';
+import { registerVendorNegative } from './routes/VendorNegative.js';
 import { registerUsers } from './routes/Users.js';
 
 export function createApp(db) {
@@ -71,6 +72,7 @@ export function createApp(db) {
   registerReportExtras(app, db);
   registerReportEditing(app, db);
   registerVendors(app, db);
+  registerVendorNegative(app, db);
   app.use('/api', (req, res) => res.status(404).json({ error: 'Endpoint not found.' }));
   app.use(express.static(path.resolve('dist')));
   app.get('/{*path}', (req, res) => res.sendFile(path.resolve('dist/index.html')));

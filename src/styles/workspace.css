@@ -364,6 +364,34 @@ main {
   font-size: 10px;
   color: #4c5d75;
 }
+.admin-selector-wrap {
+  border-color: #818cf8 !important;
+  background: #f5f3ff !important;
+}
+.admin-selector-wrap select {
+  font-weight: 700 !important;
+  color: #4338ca !important;
+}
+.creator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ede9fe;
+  color: #4338ca;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid #c7d2fe;
+}
+.vendor-admin-filter {
+  border-color: #818cf8 !important;
+  background: #f5f3ff !important;
+}
+.vendor-admin-filter select {
+  font-weight: 700 !important;
+  color: #4338ca !important;
+}
 .range-caption {
   font-size: 10px;
   color: #687990;
@@ -807,6 +835,62 @@ main {
   color: #94a3b8 !important;
   font-weight: 500;
   text-align: center !important;
+}
+
+/* Campaign Row 1: 30-min interval Total (e.g. ACA Total) */
+.entry-table .subtotal-row.campaign-interval-total td {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  font-weight: 750;
+  font-size: 9.5px;
+  height: 31px;
+  border-top: 1px solid #cbd5e1;
+  border-bottom: 1px dashed #cbd5e1;
+  border-right: 1px solid #e2e8f0;
+}
+.entry-table .subtotal-row.campaign-interval-total td:first-child {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  font-weight: 750;
+  font-size: 10px;
+  border-bottom: 1px dashed #cbd5e1;
+}
+.entry-table .subtotal-row.campaign-interval-total td:last-child {
+  background: #f5f3ff !important;
+  color: #4f46e5 !important;
+  font-weight: 800;
+  border-bottom: 1px dashed #cbd5e1;
+}
+
+/* Campaign Row 2: Progressive Cumulative running TOTAL (e.g. ACA TOTAL) */
+.entry-table .subtotal-row.campaign-cumulative-total td {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  font-weight: 800;
+  font-size: 9.5px;
+  height: 33px;
+  border-top: none;
+  border-bottom: 2px solid #94a3b8;
+  border-right: 1px solid #cbd5e1;
+}
+.entry-table .subtotal-row.campaign-cumulative-total td:first-child {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 900;
+  font-size: 10.5px;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid #94a3b8;
+}
+.entry-table .subtotal-row.campaign-cumulative-total td:last-child {
+  background: #ede9fe !important;
+  color: #3730a3 !important;
+  font-weight: 900;
+  border-bottom: 2px solid #94a3b8;
+}
+.entry-table .subtotal-row td.cumulative-val-active {
+  color: #1e1b4b !important;
+  font-weight: 900 !important;
+  background: rgba(224, 231, 255, 0.45) !important;
 }
 .entry-table td.row-total {
   position: sticky;

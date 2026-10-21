@@ -5,16 +5,33 @@ import { text, id, time, date } from '../validation/schemas.js';
 import { makeSlots, summarize } from '../../shared/reporting.js';
 export function registerReports(app, db) {
   app.get('/api/sheets', async (req, res) => {
-    res.json(
-      (
-        await db.query(
-          `SELECT s.id,s.name,to_char(${reportDateSql},'YYYY-MM-DD') report_date,s.version,s.updated_at,
+    const allowOther =
+      req.user.role === 'super_admin' &&
+      (req.query.adminView === 'true' || req.query.all === 'true');
+    const targetUserId =
+      req.query.userId && req.user.role === 'super_admin' && req.query.userId !== 'all'
+        ? Number(req.query.userId)
+        : null;
+    let query, params;
+    if (allowOther) {
+      if (targetUserId) {
+        query = `SELECT s.id,s.name,to_char(${reportDateSql},'YYYY-MM-DD') report_date,s.version,s.updated_at,s.created_by,u.name AS creator_name,
       COALESCE((SELECT SUM(e.amount) FROM voip.entries e WHERE e.sheet_id=s.id),0) total,
-      jsonb_array_length(s.config->'dialers') dialer_count FROM voip.sheets s WHERE s.created_by=$1 ORDER BY s.report_date DESC,s.id DESC`,
-          [req.user.id],
-        )
-      ).rows,
-    );
+      jsonb_array_length(s.config->'dialers') dialer_count FROM voip.sheets s LEFT JOIN voip.users u ON s.created_by=u.id WHERE s.created_by=$1 ORDER BY s.report_date DESC,s.id DESC`;
+        params = [targetUserId];
+      } else {
+        query = `SELECT s.id,s.name,to_char(${reportDateSql},'YYYY-MM-DD') report_date,s.version,s.updated_at,s.created_by,u.name AS creator_name,
+      COALESCE((SELECT SUM(e.amount) FROM voip.entries e WHERE e.sheet_id=s.id),0) total,
+      jsonb_array_length(s.config->'dialers') dialer_count FROM voip.sheets s LEFT JOIN voip.users u ON s.created_by=u.id ORDER BY s.report_date DESC,s.id DESC`;
+        params = [];
+      }
+    } else {
+      query = `SELECT s.id,s.name,to_char(${reportDateSql},'YYYY-MM-DD') report_date,s.version,s.updated_at,s.created_by,
+      COALESCE((SELECT SUM(e.amount) FROM voip.entries e WHERE e.sheet_id=s.id),0) total,
+      jsonb_array_length(s.config->'dialers') dialer_count FROM voip.sheets s WHERE s.created_by=$1 ORDER BY s.report_date DESC,s.id DESC`;
+      params = [req.user.id];
+    }
+    res.json((await db.query(query, params)).rows);
   });
   app.post('/api/sheets', async (req, res) => {
     const data = z
@@ -48,10 +65,15 @@ export function registerReports(app, db) {
   });
   app.get('/api/sheets/:id', async (req, res) => {
     const sheetId = id.parse(req.params.id);
+    const allowOther =
+      req.user.role === 'super_admin' &&
+      (req.query.adminView === 'true' || req.query.all === 'true');
     const sheet = (
       await db.query(
-        "SELECT *,to_char(report_date,'YYYY-MM-DD') report_date FROM voip.sheets WHERE id=$1 AND created_by=$2",
-        [sheetId, req.user.id],
+        allowOther
+          ? "SELECT s.*,to_char(s.report_date,'YYYY-MM-DD') report_date,u.name AS creator_name FROM voip.sheets s LEFT JOIN voip.users u ON s.created_by=u.id WHERE s.id=$1"
+          : "SELECT s.*,to_char(s.report_date,'YYYY-MM-DD') report_date FROM voip.sheets s WHERE s.id=$1 AND s.created_by=$2",
+        allowOther ? [sheetId] : [sheetId, req.user.id],
       )
     ).rows[0];
     if (!sheet) return res.status(404).json({ error: 'Report not found.' });
@@ -68,7 +90,13 @@ export function registerReports(app, db) {
           ).rows
         : undefined;
     const displayed = presentReport(sheet);
-    res.json({ ...displayed, entries, activity, summary: summarize(displayed.config, entries) });
+    res.json({
+      ...displayed,
+      creator_name: sheet.creator_name,
+      entries,
+      activity,
+      summary: summarize(displayed.config, entries),
+    });
   });
   app.put('/api/sheets/:id/entries', async (req, res) => {
     const sheetId = id.parse(req.params.id);

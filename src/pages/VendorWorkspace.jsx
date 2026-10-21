@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Save,
   Search,
+  Users,
 } from 'lucide-react';
 import { api, send } from '../services/api.js';
 import DateRangePicker from '../components/DateRangePicker.jsx';
@@ -17,7 +18,14 @@ import VendorSpendCards from '../components/VendorSpendCards.jsx';
 import { money, prettyDate, clockLabel } from '../utils/format.js';
 import { formatTimestamp } from '../../shared/time.js';
 import { downloadVendors } from '../utils/vendorDownload.js';
-export default function VendorWorkspace({ page, range, onRange, onDirty, canViewActivity }) {
+export default function VendorWorkspace({
+  page,
+  range,
+  onRange,
+  onDirty,
+  canViewActivity,
+  isSuperAdmin,
+}) {
   const directory = page === 'vendors';
   const [vendors, setVendors] = useState([]),
     [reports, setReports] = useState([]),
@@ -32,7 +40,21 @@ export default function VendorWorkspace({ page, range, onRange, onDirty, canView
     [showDeleted, setShowDeleted] = useState(false),
     [search, setSearch] = useState(''),
     [revision, setRevision] = useState(0);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [selectedAdminId, setSelectedAdminId] = useState('all');
   const dirty = Object.keys(draft).length > 0;
+  useEffect(() => {
+    if (isSuperAdmin) {
+      api('/users?includeDeleted=false')
+        .then((u) => {
+          setAdminUsers(Array.isArray(u) ? u.filter((x) => !x.deleted_at) : []);
+        })
+        .catch(() => {});
+    } else {
+      setAdminUsers([]);
+      setSelectedAdminId('all');
+    }
+  }, [isSuperAdmin]);
   useEffect(() => {
     onDirty(dirty);
     return () => onDirty(false);
@@ -71,7 +93,10 @@ export default function VendorWorkspace({ page, range, onRange, onDirty, canView
     setReports([]);
     setReport(null);
     setDraft({});
-    api(`/vendor-reports?from=${range.from}&to=${range.to}`)
+    const adminParam = isSuperAdmin
+      ? `&adminView=true${selectedAdminId !== 'all' ? '&userId=' + selectedAdminId : ''}`
+      : '';
+    api(`/vendor-reports?from=${range.from}&to=${range.to}${adminParam}`)
       .then((r) => {
         if (live) {
           setReports(r);
@@ -89,7 +114,7 @@ export default function VendorWorkspace({ page, range, onRange, onDirty, canView
     return () => {
       live = false;
     };
-  }, [directory, range.from, range.to, revision]);
+  }, [directory, range.from, range.to, revision, isSuperAdmin, selectedAdminId]);
   useEffect(() => {
     if (directory || !selected || loading) {
       setReport(null);
@@ -97,7 +122,8 @@ export default function VendorWorkspace({ page, range, onRange, onDirty, canView
     }
     let live = true;
     setReport(null);
-    api(`/vendor-reports/${selected}`)
+    const adminParam = isSuperAdmin ? '?adminView=true' : '';
+    api(`/vendor-reports/${selected}${adminParam}`)
       .then((r) => {
         if (live) setReport(r);
       })
@@ -107,7 +133,7 @@ export default function VendorWorkspace({ page, range, onRange, onDirty, canView
     return () => {
       live = false;
     };
-  }, [selected, loading, directory, revision]);
+  }, [selected, loading, directory, revision, isSuperAdmin]);
   async function refresh() {
     setRevision((v) => v + 1);
   }
@@ -295,6 +321,29 @@ export default function VendorWorkspace({ page, range, onRange, onDirty, canView
             </button>
           </div>
           <div className="vendor-toolbar">
+            {isSuperAdmin && (
+              <label className="vendor-report-selector vendor-admin-filter">
+                Admin
+                <select
+                  aria-label="Filter vendor reports by admin"
+                  disabled={busy || loading}
+                  value={selectedAdminId}
+                  onChange={(e) => {
+                    if (discard()) {
+                      setDraft({});
+                      setSelectedAdminId(e.target.value);
+                    }
+                  }}
+                >
+                  <option value="all">👥 All Admins ({adminUsers.length})</option>
+                  {adminUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      👤 {u.name} ({u.role === 'super_admin' ? 'Super Admin' : 'Admin'})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="vendor-report-selector">
               Report
               <select
@@ -313,7 +362,7 @@ export default function VendorWorkspace({ page, range, onRange, onDirty, canView
                 </option>
                 {reports.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {prettyDate(r.report_date)} · {r.name}
+                    {r.creator_name ? `[${r.creator_name}] ` : ''}{prettyDate(r.report_date)} · {r.name}
                   </option>
                 ))}
               </select>
@@ -360,7 +409,14 @@ export default function VendorWorkspace({ page, range, onRange, onDirty, canView
               <section className="panel sheet-panel">
                 <div className="panel-heading">
                   <div>
-                    <h3>{report.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                      <h3>{report.name}</h3>
+                      {report.creator_name && (
+                        <span className="creator-badge" title={`Report created by ${report.creator_name}`}>
+                          <Users size={12} /> {report.creator_name}
+                        </span>
+                      )}
+                    </div>
                     <p>
                       {prettyDate(report.report_date)} · Enter interval spend in USD · Blank = not
                       reported

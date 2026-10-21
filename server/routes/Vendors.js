@@ -72,14 +72,27 @@ export function registerVendors(app, db) {
   });
   app.get('/api/vendor-reports', async (req, res) => {
     const range = dateRange.parse(req.query);
-    res.json(
-      (
-        await db.query(
-          `${selectReports} WHERE report_date BETWEEN $1 AND $2 AND created_by=$3 ORDER BY report_date DESC,id DESC`,
-          [range.from, range.to, req.user.id],
-        )
-      ).rows.map(output),
-    );
+    const allowOther =
+      req.user.role === 'super_admin' &&
+      (req.query.adminView === 'true' || req.query.all === 'true');
+    const targetUserId =
+      req.query.userId && req.user.role === 'super_admin' && req.query.userId !== 'all'
+        ? Number(req.query.userId)
+        : null;
+    let query, params;
+    if (allowOther) {
+      if (targetUserId) {
+        query = `SELECT vr.id,vr.name,to_char(vr.report_date,'YYYY-MM-DD') AS report_date,vr.config,vr.entries,vr.version,vr.created_by,u.name AS creator_name,vr.created_at,vr.updated_at FROM voip.vendor_reports vr LEFT JOIN voip.users u ON vr.created_by=u.id WHERE vr.report_date BETWEEN $1 AND $2 AND vr.created_by=$3 ORDER BY vr.report_date DESC,vr.id DESC`;
+        params = [range.from, range.to, targetUserId];
+      } else {
+        query = `SELECT vr.id,vr.name,to_char(vr.report_date,'YYYY-MM-DD') AS report_date,vr.config,vr.entries,vr.version,vr.created_by,u.name AS creator_name,vr.created_at,vr.updated_at FROM voip.vendor_reports vr LEFT JOIN voip.users u ON vr.created_by=u.id WHERE vr.report_date BETWEEN $1 AND $2 ORDER BY vr.report_date DESC,vr.id DESC`;
+        params = [range.from, range.to];
+      }
+    } else {
+      query = `${selectReports} WHERE report_date BETWEEN $1 AND $2 AND created_by=$3 ORDER BY report_date DESC,id DESC`;
+      params = [range.from, range.to, req.user.id];
+    }
+    res.json((await db.query(query, params)).rows.map(output));
   });
   app.get('/api/vendor-reports/all', async (req, res) => {
     if (req.user.role !== 'super_admin') {
@@ -96,11 +109,16 @@ export function registerVendors(app, db) {
     );
   });
   app.get('/api/vendor-reports/:id', async (req, res) => {
+    const allowOther =
+      req.user.role === 'super_admin' &&
+      (req.query.adminView === 'true' || req.query.all === 'true');
     const report = (
-      await db.query(`${selectReports} WHERE id=$1 AND created_by=$2`, [
-        id.parse(req.params.id),
-        req.user.id,
-      ])
+      await db.query(
+        allowOther
+          ? `SELECT vr.id,vr.name,to_char(vr.report_date,'YYYY-MM-DD') AS report_date,vr.config,vr.entries,vr.version,vr.created_by,u.name AS creator_name,vr.created_at,vr.updated_at FROM voip.vendor_reports vr LEFT JOIN voip.users u ON vr.created_by=u.id WHERE vr.id=$1`
+          : `${selectReports} WHERE id=$1 AND created_by=$2`,
+        allowOther ? [id.parse(req.params.id)] : [id.parse(req.params.id), req.user.id],
+      )
     ).rows[0];
     if (!report) return res.status(404).json({ error: 'Vendor report not found.' });
     const activity =
@@ -112,7 +130,7 @@ export function registerVendors(app, db) {
             )
           ).rows
         : undefined;
-    res.json({ ...output(report), activity });
+    res.json({ ...output(report), activity, creator_name: report.creator_name });
   });
   app.post('/api/vendor-reports', async (req, res) => {
     const data = z

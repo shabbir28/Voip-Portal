@@ -492,3 +492,213 @@
     font-size: 10px;
   }
 }
+
+/* Smart & Compact Vendor Negative Table */
+.vendor-negative-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  table-layout: fixed !important;
+  background: #ffffff !important;
+}
+
+.vendor-negative-table thead tr {
+  background: #0f172a !important;
+  height: 35px !important;
+}
+
+.vendor-negative-table th.vn-th-vendor {
+  text-align: left !important;
+  height: 35px !important;
+  padding: 0 16px !important;
+  color: #f8fafc !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  background: #0f172a !important;
+  border-right: 1px solid #334155 !important;
+  border-bottom: 1px solid #334155 !important;
+  box-sizing: border-box !important;
+}
+
+.vendor-negative-table th.vn-th-amount {
+  text-align: right !important;
+  height: 35px !important;
+  padding: 0 16px !important;
+  color: #c7d2fe !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  background: #1e1b4b !important;
+  border-bottom: 1px solid #334155 !important;
+  width: 220px !important;
+  min-width: 180px !important;
+  max-width: 240px !important;
+  box-sizing: border-box !important;
+}
+
+.vendor-negative-table tbody tr {
+  height: 34px !important;
+  transition: background-color 0.15s ease;
+}
+
+.vendor-negative-table tbody tr:hover td.vn-vendor-cell {
+  background-color: #f8fafc !important;
+}
+
+.vendor-negative-table tbody tr:hover .vn-row-edit {
+  opacity: 1 !important;
+}
+
+.vendor-negative-table td.vn-vendor-cell {
+  text-align: left !important;
+  height: 34px !important;
+  padding: 0 16px !important;
+  background: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+}
+
+.vendor-negative-table .vn-vendor-wrap {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: 100% !important;
+  text-align: left !important;
+}
+
+.vendor-negative-table .vn-vendor-icon {
+  color: #6366f1 !important;
+  flex-shrink: 0 !important;
+  opacity: 0.85;
+}
+
+.vendor-negative-table .vn-vendor-name {
+  font-size: 11.5px !important;
+  font-weight: 650 !important;
+  color: #1e293b !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.vendor-negative-table .vn-row-edit {
+  opacity: 0;
+  margin-left: 2px;
+  padding: 2px 4px !important;
+  background: transparent !important;
+  border: 0 !important;
+  cursor: pointer !important;
+  color: #64748b !important;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.vendor-negative-table .vn-row-edit:hover {
+  color: #4338ca !important;
+}
+
+.vendor-negative-table td.vn-amount-cell {
+  text-align: right !important;
+  height: 34px !important;
+  padding: 0 !important;
+  width: 220px !important;
+  min-width: 180px !important;
+  max-width: 240px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.vendor-negative-table .vn-amount-input {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 34px !important;
+  padding: 0 16px !important;
+  text-align: right !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-sizing: border-box !important;
+  font-variant-numeric: tabular-nums !important;
+  outline: none !important;
+  box-shadow: none !important;
+  appearance: textfield !important;
+  transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+.vendor-negative-table .vn-amount-input::-webkit-inner-spin-button,
+.vendor-negative-table .vn-amount-input::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+.vendor-negative-table .vn-amount-input::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+  text-align: right !important;
+}
+
+.vendor-negative-table .vn-amount-input:hover {
+  background: #f8fafc !important;
+}
+
+.vendor-negative-table .vn-amount-input:focus {
+  background: #eef2ff !important;
+  box-shadow: inset 0 0 0 1.5px #6366f1 !important;
+  color: #312e81 !important;
+}
+
+.vendor-negative-table .vn-amount-input.cell-dirty {
+  background: #fef9c3 !important;
+  color: #854d0e !important;
+  box-shadow: inset 0 0 0 1.5px #eab308 !important;
+}
+
+.vendor-negative-table tfoot tr.vn-total-row td {
+  height: 35px !important;
+  border-top: 2px solid #3730a3 !important;
+  box-sizing: border-box !important;
+}
+
+.vendor-negative-table tfoot td.vn-total-label {
+  text-align: left !important;
+  height: 35px !important;
+  padding: 0 16px !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  border-right: 1px solid #334155 !important;
+  vertical-align: middle !important;
+}
+
+.vendor-negative-table tfoot td.vn-total-amount {
+  text-align: right !important;
+  height: 35px !important;
+  padding: 0 16px !important;
+  background: #1e1b4b !important;
+  color: #38bdf8 !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums !important;
+  vertical-align: middle !important;
+}
+
+
+

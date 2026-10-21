@@ -7,6 +7,7 @@ import request from 'supertest';
 import { createApp } from '../server/app.js';
 import { migrate } from '../server/db.js';
 import { verifyVendorApi } from './vendor-api.js';
+import { verifyVendorNegativeApi } from './vendor-negative-api.js';
 import { verifyRoles } from './roles-api.js';
 import { verifyUserEditing } from './user-editing-api.js';
 test('PostgreSQL authentication, reporting, validation and concurrent edits', async (t) => {
@@ -432,6 +433,7 @@ test('PostgreSQL authentication, reporting, validation and concurrent edits', as
       },
     );
     await verifyVendorApi(t, agent, mutate, db);
+    await verifyVendorNegativeApi(t, agent, mutate);
     await verifyRoles(t, app, agent, mutate, db);
     await verifyReportOwnership(t, app, agent, mutate);
     await verifyUserEditing(t, app, agent, mutate, db);

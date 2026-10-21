@@ -2,6 +2,7 @@ import { TIMEZONE_LABEL, timezoneAbbreviation } from '../../shared/time.js';
 import CatalogEditModal from '../components/CatalogEditModal.jsx';
 import ReportRowModal from '../components/ReportRowModal.jsx';
 import VendorWorkspace from '../pages/VendorWorkspace.jsx';
+import VendorNegativeWorkspace from '../pages/VendorNegativeWorkspace.jsx';
 import VendorOverview from '../components/VendorOverview.jsx';
 import UsersPage from '../pages/UsersPage.jsx';
 import WorkspaceActivityPage from '../pages/WorkspaceActivityPage.jsx';
@@ -11,6 +12,7 @@ import {
   Users,
   Building2,
   ReceiptText,
+  MinusCircle,
   ArrowDownToLine,
   ArrowRight,
   CalendarDays,
@@ -87,6 +89,8 @@ export default function App() {
     [showDeleted, setShowDeleted] = useState(false),
     [directoryCatalog, setDirectoryCatalog] = useState({ campaigns: [], dialers: [] }),
     [directoryBusy, setDirectoryBusy] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [selectedAdminId, setSelectedAdminId] = useState('all');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('voip_sidebar_collapsed') === 'true';
@@ -159,7 +163,10 @@ export default function App() {
   }
   const requestId = useRef(0);
   const visibleSheets = sheets.filter(
-    (s) => s.report_date >= range.from && s.report_date <= range.to,
+    (s) =>
+      s.report_date >= range.from &&
+      s.report_date <= range.to &&
+      (selectedAdminId === 'all' || !isSuperAdmin || Number(s.created_by) === Number(selectedAdminId)),
   );
   const dirty = Object.keys(draft).length > 0;
   useEffect(() => {
@@ -221,15 +228,33 @@ export default function App() {
     setCatalog(c);
     return c;
   }
-  async function refreshSheets() {
-    const s = await api('/sheets');
+  async function refreshSheets(adminId = selectedAdminId) {
+    const query = isSuperAdmin
+      ? `?adminView=true${adminId !== 'all' ? '&userId=' + adminId : ''}`
+      : '';
+    const s = await api(`/sheets${query}`);
     setSheets(s);
     return s;
   }
   useEffect(() => {
+    if (user && isSuperAdmin) {
+      api('/users?includeDeleted=false')
+        .then((data) => {
+          setAdminUsers(Array.isArray(data) ? data.filter((u) => !u.deleted_at) : []);
+        })
+        .catch(() => {});
+    } else {
+      setAdminUsers([]);
+      setSelectedAdminId('all');
+    }
+  }, [user?.id, isSuperAdmin]);
+  useEffect(() => {
     let cancelled = false;
-    if (user)
-      Promise.all([api('/catalog'), api('/sheets')])
+    if (user) {
+      const sheetsQuery = isSuperAdmin
+        ? `?adminView=true${selectedAdminId !== 'all' ? '&userId=' + selectedAdminId : ''}`
+        : '';
+      Promise.all([api('/catalog'), api(`/sheets${sheetsQuery}`)])
         .then(([c, s]) => {
           if (!cancelled) {
             setCatalog(c);
@@ -239,16 +264,18 @@ export default function App() {
         .catch((e) => {
           if (!cancelled) fail(e);
         });
+    }
     return () => {
       cancelled = true;
       requestId.current++;
     };
-  }, [user?.id]);
+  }, [user?.id, isSuperAdmin, selectedAdminId]);
   async function loadSheet(sheetId, preserveDraft = false) {
     const sequence = ++requestId.current;
     setLoading(true);
     try {
-      const result = await api(`/sheets/${sheetId}`);
+      const query = isSuperAdmin ? '?adminView=true' : '';
+      const result = await api(`/sheets/${sheetId}${query}`);
       if (sequence !== requestId.current) return;
       setSheet(result);
       if (!preserveDraft) setDraft({});
@@ -380,6 +407,7 @@ export default function App() {
     ['sheets', FileSpreadsheet, 'Daily reports'],
     ['dialers', Radio, 'Dialers & campaigns'],
     ['vendor-reports', ReceiptText, 'Vendor reports'],
+    ['vendor-negative', MinusCircle, 'Vendor negative'],
     ['vendors', Building2, 'Vendors'],
     ...(isSuperAdmin
       ? [
@@ -534,15 +562,17 @@ export default function App() {
                   ? 'Operations overview'
                   : page === 'users'
                     ? 'Users & access'
-                    : vendorPage
-                      ? page === 'vendors'
-                        ? 'Vendors'
-                        : 'Vendor reports'
-                      : page === 'sheets'
-                        ? 'Daily reports'
-                        : page === 'dialers'
-                          ? 'Dialers & campaigns'
-                          : 'Workspace activity'}
+                    : page === 'vendor-negative'
+                      ? 'Vendor negative'
+                      : vendorPage
+                        ? page === 'vendors'
+                          ? 'Vendors'
+                          : 'Vendor reports'
+                        : page === 'sheets'
+                          ? 'Daily reports'
+                          : page === 'dialers'
+                            ? 'Dialers & campaigns'
+                            : 'Workspace activity'}
                 <span className="heading-dot">.</span>
               </h1>
               <p className="muted">
@@ -550,18 +580,20 @@ export default function App() {
                   ? 'A clear view of your VoIP spend, one interval at a time.'
                   : page === 'users'
                     ? 'Create accounts and give your team the right access.'
-                    : vendorPage
-                      ? page === 'vendors'
-                        ? 'Your vendor directory, organized and easy to manage.'
-                        : 'Hourly vendor spend, with automatic totals and a familiar sheet.'
-                      : page === 'sheets'
-                        ? 'Your familiar spreadsheet. With totals that take care of themselves.'
-                        : page === 'dialers'
-                          ? 'Organize the dialers that power your daily operations.'
-                          : 'A record of saved changes, so your team stays in sync.'}
+                    : page === 'vendor-negative'
+                      ? 'Record and track vendor deductions, adjustments, and negative spend.'
+                      : vendorPage
+                        ? page === 'vendors'
+                          ? 'Your vendor directory, organized and easy to manage.'
+                          : 'Hourly vendor spend, with automatic totals and a familiar sheet.'
+                        : page === 'sheets'
+                          ? 'Your familiar spreadsheet. With totals that take care of themselves.'
+                          : page === 'dialers'
+                            ? 'Organize the dialers that power your daily operations.'
+                            : 'A record of saved changes, so your team stays in sync.'}
               </p>
             </div>
-            {!vendorPage && page !== 'users' && page !== 'activity' && (
+            {!vendorPage && page !== 'vendor-negative' && page !== 'users' && page !== 'activity' && (
               <div className="heading-actions">
                 {(page === 'overview' || page === 'sheets') && (
                   <button
@@ -598,10 +630,32 @@ export default function App() {
               </button>
             </div>
           )}
-          {page !== 'dialers' && page !== 'users' && !vendorPage && (
+          {page !== 'dialers' && page !== 'users' && page !== 'vendor-negative' && !vendorPage && (
             <div className="report-toolbar">
               <div className="report-toolbar-left">
                 <DateRangePicker value={range} onChange={changeRange} disabled={saving} />
+                {isSuperAdmin && page === 'sheets' && (
+                  <div className="report-selector admin-selector-wrap" title="Filter daily reports by Admin">
+                    <Users size={16} />
+                    <select
+                      aria-label="Filter reports by admin"
+                      value={selectedAdminId}
+                      onChange={(e) => {
+                        if (dirty && !window.confirm('Discard unsaved entries and switch admin?')) return;
+                        setDraft({});
+                        setSelectedAdminId(e.target.value);
+                      }}
+                    >
+                      <option value="all">👥 All Admins ({adminUsers.length})</option>
+                      {adminUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          👤 {u.name} ({u.role === 'super_admin' ? 'Super Admin' : 'Admin'})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} />
+                  </div>
+                )}
                 {page === 'sheets' && (
                   <div className="report-selector">
                     <CalendarDays size={17} />
@@ -615,7 +669,7 @@ export default function App() {
                       </option>
                       {visibleSheets.map((s) => (
                         <option key={s.id} value={s.id}>
-                          {prettyDate(s.report_date)} · {s.name}
+                          {s.creator_name ? `[${s.creator_name}] ` : ''}{prettyDate(s.report_date)} · {s.name}
                         </option>
                       ))}
                     </select>
@@ -710,6 +764,9 @@ export default function App() {
               />
             </>
           )}
+          {page === 'vendor-negative' && (
+            <VendorNegativeWorkspace onDirty={setVendorDirty} />
+          )}
           {vendorPage && (
             <VendorWorkspace
               key={page}
@@ -718,6 +775,7 @@ export default function App() {
               onRange={setRange}
               onDirty={setVendorDirty}
               canViewActivity={isSuperAdmin}
+              isSuperAdmin={isSuperAdmin}
             />
           )}
           {page === 'sheets' && sheet && (

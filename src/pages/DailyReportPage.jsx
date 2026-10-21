@@ -9,6 +9,7 @@ import {
   Save,
   SlidersHorizontal,
   Camera,
+  Users,
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { money, clockLabel, clockParts } from '../utils/format.js';
@@ -89,7 +90,14 @@ export default function DailyReportPage({
     <section className="panel sheet-panel">
       <div className="panel-heading">
         <div>
-          <h3>{sheet.name}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+            <h3>{sheet.name}</h3>
+            {sheet.creator_name && (
+              <span className="creator-badge" title={`Report created by ${sheet.creator_name}`}>
+                <Users size={12} /> {sheet.creator_name}
+              </span>
+            )}
+          </div>
           <p>Enter USD amounts · Tab to move between cells · Blank means not reported</p>
         </div>
         <div className="save-controls">
@@ -180,31 +188,52 @@ export default function DailyReportPage({
           <tbody>
             {groups
               .filter((g) => filteredDialers.some((d) => d.campaign_id === g.id))
-              .map((g) => (
-                <React.Fragment key={g.id}>
-                  <tr className="campaign-row">
-                    <td colSpan={sheet.config.slots.length + 2}>
-                      <div className="campaign-row-content">
-                        <div className="campaign-left">
-                          <span className="campaign-dot" style={{ background: g.color || '#818cf8' }} />
-                          <strong className="campaign-name">{g.name}</strong>
-                          <span className="campaign-count">
-                            {filteredDialers.filter((d) => d.campaign_id === g.id).length} dialers
-                          </span>
+              .map((g) => {
+                const groupDialers = filteredDialers.filter((d) => d.campaign_id === g.id);
+                const groupDialerIdSet = new Set(groupDialers.map((d) => d.id));
+
+                const campaignSlotTotals = sheet.config.slots.map((_, i) =>
+                  liveEntries
+                    .filter((e) => e.slot === i && groupDialerIdSet.has(e.dialer_id))
+                    .reduce((n, e) => n + Number(e.amount), 0),
+                );
+
+                const campaignLastActiveSlot = campaignSlotTotals.reduce(
+                  (max, val, idx) => (val > 0 ? idx : max),
+                  -1,
+                );
+
+                let runningSum = 0;
+                const campaignCumulativeTotals = campaignSlotTotals.map((val) => {
+                  runningSum += val;
+                  return runningSum;
+                });
+
+                const campaignGrandTotal = groupDialers.reduce((n, d) => n + d.total, 0);
+
+                return (
+                  <React.Fragment key={g.id}>
+                    <tr className="campaign-row">
+                      <td colSpan={sheet.config.slots.length + 2}>
+                        <div className="campaign-row-content">
+                          <div className="campaign-left">
+                            <span className="campaign-dot" style={{ background: g.color || '#818cf8' }} />
+                            <strong className="campaign-name">{g.name}</strong>
+                            <span className="campaign-count">
+                              {groupDialers.length} dialers
+                            </span>
+                          </div>
+                          <button
+                            className="add-row-btn"
+                            disabled={saving}
+                            onClick={() => onAddDialer(g.id)}
+                          >
+                            <Plus size={12} /> Add dialer row
+                          </button>
                         </div>
-                        <button
-                          className="add-row-btn"
-                          disabled={saving}
-                          onClick={() => onAddDialer(g.id)}
-                        >
-                          <Plus size={12} /> Add dialer row
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  {filteredDialers
-                    .filter((d) => d.campaign_id === g.id)
-                    .map((d) => (
+                      </td>
+                    </tr>
+                    {groupDialers.map((d) => (
                       <tr key={d.id}>
                         <td className="dialer-cell">
                           <div className="dialer-cell-wrap">
@@ -262,38 +291,44 @@ export default function DailyReportPage({
                         <td className="row-total">{money(d.total)}</td>
                       </tr>
                     ))}
-                  <tr className="subtotal-row">
-                    <td>{g.name} subtotal</td>
-                    {summary.intervals.map((_, i) => {
-                      const slotVal = liveEntries
-                        .filter(
-                          (e) =>
-                            e.slot === i &&
-                            filteredDialers.some(
-                              (d) => d.campaign_id === g.id && d.id === e.dialer_id,
-                            ),
-                        )
-                        .reduce((n, e) => n + Number(e.amount), 0);
-                      return (
+                    {/* Row 1: 30-min interval Total (e.g. ACA Total) */}
+                    <tr className="subtotal-row campaign-interval-total">
+                      <td className="campaign-total-label" title={`${g.name} Total`}>
+                        {g.name} Total
+                      </td>
+                      {campaignSlotTotals.map((slotVal, i) => (
                         <td
                           key={i}
                           className={slotVal > 0 ? 'subtotal-val-active' : 'subtotal-val-muted'}
-                          title={`${g.name} ${clockLabel(sheet.config.slots[i].start)}: ${money(slotVal)}`}
+                          title={`${g.name} Total at ${clockLabel(sheet.config.slots[i].start)}: ${money(slotVal)}`}
                         >
                           {slotVal > 0 ? money(slotVal) : '—'}
                         </td>
-                      );
-                    })}
-                    <td className="subtotal-grand">
-                      {money(
-                        filteredDialers
-                          .filter((d) => d.campaign_id === g.id)
-                          .reduce((n, d) => n + d.total, 0),
-                      )}
-                    </td>
-                  </tr>
-                </React.Fragment>
-              ))}
+                      ))}
+                      <td className="subtotal-grand">{money(campaignGrandTotal)}</td>
+                    </tr>
+                    {/* Row 2: Progressive Cumulative running TOTAL (e.g. ACA TOTAL) */}
+                    <tr className="subtotal-row campaign-cumulative-total">
+                      <td className="campaign-total-label cumulative-label" title={`${g.name} TOTAL`}>
+                        {g.name} TOTAL
+                      </td>
+                      {campaignCumulativeTotals.map((cumVal, i) => {
+                        const hasSpend = i <= campaignLastActiveSlot && cumVal > 0;
+                        return (
+                          <td
+                            key={i}
+                            className={hasSpend ? 'cumulative-val-active' : 'subtotal-val-muted'}
+                            title={`${g.name} TOTAL through ${clockLabel(sheet.config.slots[i].end)}: ${money(cumVal)}`}
+                          >
+                            {hasSpend ? money(cumVal) : '—'}
+                          </td>
+                        );
+                      })}
+                      <td className="subtotal-grand cumulative-grand">{money(campaignGrandTotal)}</td>
+                    </tr>
+                  </React.Fragment>
+                );
+              })}
           </tbody>
           <tfoot>
             <tr className="full-total-row">
@@ -356,6 +391,7 @@ export default function DailyReportPage({
                   {sheet.config.timezone || 'America/New_York'})
                 </span>
                 <span>👥 {summary.dialers.length} Active Dialers</span>
+                {sheet.creator_name && <span>👤 Admin: {sheet.creator_name}</span>}
               </div>
             </div>
             <div className="ss-header-right">
@@ -387,6 +423,24 @@ export default function DailyReportPage({
                 const campaignDialers = summary.dialers.filter((d) => d.campaign_id === g.id);
                 if (campaignDialers.length === 0) return null;
                 const campaignSubtotal = campaignDialers.reduce((n, d) => n + d.total, 0);
+                const campaignDialerIdSet = new Set(campaignDialers.map((d) => d.id));
+
+                const ssSlotTotals = sheet.config.slots.map((_, i) =>
+                  liveEntries
+                    .filter((e) => e.slot === i && campaignDialerIdSet.has(e.dialer_id))
+                    .reduce((n, e) => n + Number(e.amount), 0),
+                );
+
+                const ssLastActiveSlot = ssSlotTotals.reduce(
+                  (max, val, idx) => (val > 0 ? idx : max),
+                  -1,
+                );
+
+                let ssRunning = 0;
+                const ssCumulativeTotals = ssSlotTotals.map((val) => {
+                  ssRunning += val;
+                  return ssRunning;
+                });
 
                 return (
                   <React.Fragment key={g.id}>
@@ -423,12 +477,11 @@ export default function DailyReportPage({
                         <td className="ss-td-row-total">{money(d.total)}</td>
                       </tr>
                     ))}
-                    <tr className="ss-subtotal-row">
-                      <td className="ss-td-dialer">{g.name} Subtotal</td>
+                    {/* Row 1: SS Interval Total */}
+                    <tr className="ss-subtotal-row ss-interval-row">
+                      <td className="ss-td-dialer">{g.name} Total</td>
                       {sheet.config.slots.map((_, i) => {
-                        const slotTotal = liveEntries
-                          .filter((e) => e.slot === i && campaignDialers.some((d) => d.id === e.dialer_id))
-                          .reduce((n, e) => n + Number(e.amount), 0);
+                        const slotTotal = ssSlotTotals[i];
                         return (
                           <td
                             key={i}
@@ -439,6 +492,23 @@ export default function DailyReportPage({
                         );
                       })}
                       <td className="ss-td-row-total ss-subtotal-grand">{money(campaignSubtotal)}</td>
+                    </tr>
+                    {/* Row 2: SS Cumulative Running TOTAL */}
+                    <tr className="ss-subtotal-row ss-cumulative-row">
+                      <td className="ss-td-dialer ss-cumulative-label">{g.name} TOTAL</td>
+                      {sheet.config.slots.map((_, i) => {
+                        const cumTotal = ssCumulativeTotals[i];
+                        const hasSpend = i <= ssLastActiveSlot && cumTotal > 0;
+                        return (
+                          <td
+                            key={i}
+                            className={`ss-td-cell ${hasSpend ? 'ss-cumulative-cell' : 'ss-empty-cell'}`}
+                          >
+                            {hasSpend ? money(cumTotal) : '—'}
+                          </td>
+                        );
+                      })}
+                      <td className="ss-td-row-total ss-cumulative-grand">{money(campaignSubtotal)}</td>
                     </tr>
                   </React.Fragment>
                 );
