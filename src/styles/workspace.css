@@ -66,12 +66,16 @@ nav button {
   width: 210px;
   padding: 22px 15px 0;
   background: #111c30;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .main-wrap {
   margin-left: 210px;
   width: calc(100% - 210px);
-  transition: margin-left 0.22s cubic-bezier(0.16, 1, 0.3, 1), width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    margin-left 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .app-shell.sidebar-collapsed .sidebar {
   transform: translateX(-100%);
@@ -1626,4 +1630,205 @@ main {
   .report-row-tools b {
     font-size: 13px;
   }
+}
+/* Keep full dialer names within the existing screen-width table. */
+.daily-report-sheet .entry-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+.daily-report-sheet .entry-table .dialer-cell-wrap {
+  align-items: center;
+  min-width: 0;
+}
+.daily-report-sheet .entry-table .dialer-cell-wrap .row-label {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+  padding: 5px 0;
+}
+.daily-report-sheet .entry-table td.dialer-cell {
+  white-space: normal;
+  height: auto;
+}
+.daily-report-sheet .entry-table .campaign-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Screenshot-only reference theme, applied to a clone of the live report. */
+.daily-report-sheet.spreadsheet-capture {
+  border: 1px solid #17374f;
+  border-radius: 0;
+  background: white;
+  box-shadow: none;
+}
+.spreadsheet-capture .panel-heading {
+  display: block;
+  padding: 10px 12px;
+  text-align: center;
+  background: #ffa000;
+  border-bottom: 2px solid #17374f;
+}
+.spreadsheet-capture .panel-heading h3 {
+  color: #102a43;
+  font-family: Georgia, serif;
+  font-size: 25px;
+  font-weight: 800;
+  margin: 0;
+}
+.spreadsheet-capture .panel-heading p {
+  color: #17374f;
+  font-size: 11px;
+  margin: 4px 0 0;
+}
+.spreadsheet-capture .sheet-scroll {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.spreadsheet-capture .entry-table th,
+.spreadsheet-capture .entry-table td {
+  box-shadow: none !important;
+  border: 1px solid #55758b !important;
+  height: 25px;
+  color: #102a43 !important;
+  font-size: 11px;
+}
+.spreadsheet-capture .entry-table tbody tr:not(.campaign-row):not(.subtotal-row) td {
+  background: #f4f8df !important;
+}
+.spreadsheet-capture .entry-table tbody td.dialer-cell {
+  background: #c6dfee !important;
+}
+.spreadsheet-capture .entry-table .dialer-cell-wrap .row-label {
+  font-size: 11px;
+  padding: 3px 0;
+}
+.spreadsheet-capture .dialer-radio-icon {
+  display: none;
+}
+.spreadsheet-capture .entry-table .campaign-row td {
+  background: #10588c !important;
+  padding: 6px 10px;
+  border-top: 3px solid #17374f !important;
+}
+.spreadsheet-capture .campaign-name {
+  color: #fff0a6 !important;
+  font-size: 15px;
+}
+.spreadsheet-capture .campaign-count {
+  color: white;
+  background: transparent;
+}
+.spreadsheet-capture .entry-table .capture-slot-header th {
+  background: #c6dfee !important;
+  color: #102a43 !important;
+  padding: 4px 2px;
+}
+.spreadsheet-capture .entry-table .capture-slot-header .th-time-val {
+  color: #102a43 !important;
+  font-size: 11px;
+}
+.spreadsheet-capture .entry-table .capture-slot-header .th-time-period {
+  color: #38556c !important;
+  font-size: 9px;
+}
+.spreadsheet-capture .entry-table .subtotal-row.campaign-interval-total td {
+  background: #dcebf5 !important;
+  color: #102a43 !important;
+  font-weight: 700;
+}
+.spreadsheet-capture .entry-table .subtotal-row.campaign-cumulative-total td {
+  background: #b9d9ed !important;
+  color: #102a43 !important;
+  font-weight: 800;
+}
+.spreadsheet-capture .entry-table tfoot .full-total-row td {
+  background: #10588c !important;
+  color: #fff !important;
+  font-weight: 800;
+  height: 32px;
+}
+.spreadsheet-capture .entry-table tfoot .running-total-row td {
+  background: #c6dfee !important;
+  color: #102a43 !important;
+  height: 28px;
+}
+.spreadsheet-capture .table-footer {
+  padding: 7px 10px;
+  background: white;
+  color: #38556c;
+  font-size: 10px;
+}
+/* Balanced name column: preserve full names without squeezing the row label. */
+.daily-report-sheet:not(.spreadsheet-capture) .entry-table td.dialer-cell {
+  padding: 6px 9px;
+  background: #fbfcff;
+}
+.daily-report-sheet:not(.spreadsheet-capture) .dialer-cell-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  gap: 7px;
+}
+.daily-report-sheet:not(.spreadsheet-capture) .dialer-radio-icon {
+  display: none;
+}
+.daily-report-sheet:not(.spreadsheet-capture) .entry-table .dialer-cell-wrap .row-label {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+  padding: 1px 0;
+  word-break: normal;
+  overflow-wrap: break-word;
+  color: #25344d;
+}
+.daily-report-sheet:not(.spreadsheet-capture) .dialer-cell-wrap .row-edit {
+  margin: 0;
+  padding: 3px;
+  width: 22px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  opacity: 0.55;
+  border: 1px solid #e1e6ef;
+  border-radius: 5px;
+  background: #fff;
+}
+.daily-report-sheet:not(.spreadsheet-capture) .dialer-cell-wrap .row-edit:hover,
+.daily-report-sheet:not(.spreadsheet-capture) .dialer-cell-wrap .row-edit:focus-visible {
+  opacity: 1;
+}
+.daily-report-sheet:not(.spreadsheet-capture)
+  .entry-table
+  tbody
+  tr:not(.campaign-row):not(.subtotal-row)
+  td {
+  height: 39px;
+}
+
+/* One column grid for headers, editable rows and both subtotal rows. */
+.daily-report-sheet .entry-table col.daily-name-column {
+  width: 19%;
+}
+.daily-report-sheet .entry-table col.daily-total-column {
+  width: 7%;
+}
+.daily-report-sheet .entry-table th,
+.daily-report-sheet .entry-table td {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+.daily-report-sheet .entry-table th:first-child,
+.daily-report-sheet .entry-table .campaign-total-label,
+.daily-report-sheet .entry-table tfoot td:first-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}
+.daily-report-sheet .entry-table .dialer-cell-wrap .row-label {
+  text-align: left;
 }

@@ -599,7 +599,9 @@
   border: 0 !important;
   cursor: pointer !important;
   color: #64748b !important;
-  transition: opacity 0.15s, color 0.15s;
+  transition:
+    opacity 0.15s,
+    color 0.15s;
 }
 
 .vendor-negative-table .vn-row-edit:hover {
@@ -637,7 +639,9 @@
   outline: none !important;
   box-shadow: none !important;
   appearance: textfield !important;
-  transition: background-color 0.15s, box-shadow 0.15s;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .vendor-negative-table .vn-amount-input::-webkit-inner-spin-button,
@@ -700,5 +704,471 @@
   vertical-align: middle !important;
 }
 
-
-
+.vendor-negative-table {
+  min-width: 900px !important;
+}
+.vendor-credit-alert {
+  display: flex;
+  gap: 14px;
+  padding: 20px 24px;
+  margin: 0 0 20px;
+  border: 1px solid #e4aa28;
+  border-left: 5px solid #d48b05;
+  border-radius: 12px;
+  background: #fff8df;
+  color: #744600;
+  box-shadow: 0 4px 16px #a66b0010;
+}
+.vendor-credit-alert > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.vendor-credit-alert > div {
+  flex: 1;
+}
+.vendor-credit-alert strong {
+  font-size: 18px;
+}
+.vendor-credit-alert p {
+  margin: 6px 0 12px;
+}
+.vendor-credit-alert ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 8px;
+  list-style: none;
+}
+.vendor-credit-alert li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid #edcf83;
+  border-radius: 6px;
+  background: #fffdf3;
+}
+.vendor-negative-table .vn-credit-balance {
+  text-align: right;
+  padding: 8px 16px;
+  color: #14674d;
+  background: #f0faf5;
+  border-bottom: 1px solid #dce8e0;
+  font-variant-numeric: tabular-nums;
+}
+.vendor-negative-table .vn-credit-balance.is-low {
+  background: #fff4ce;
+  color: #854d0e;
+}
+.vn-credit-balance small {
+  display: block;
+  margin-top: 3px;
+  font-weight: 600;
+}
+/* Compact vendor ledger: page-specific density, with readable inputs. */
+main.vendor-credit-page {
+  padding-top: 18px;
+}
+.vendor-credit-page .page-heading {
+  margin-bottom: 14px;
+}
+.vendor-credit-page .page-heading .eyebrow {
+  display: none;
+}
+.vendor-credit-page .page-heading h1 {
+  font-size: 26px;
+  margin: 0 0 4px;
+}
+.vendor-credit-page .page-heading p {
+  margin: 0;
+  font-size: 13px;
+}
+.vendor-negative-workspace .vendor-toolbar {
+  margin: 0 0 12px;
+  gap: 10px;
+  justify-content: space-between;
+}
+.vendor-negative-workspace .vendor-toolbar .range-caption {
+  font-size: 12px;
+}
+.vendor-negative-workspace button.secondary,
+.vendor-negative-workspace button.primary {
+  min-height: 32px;
+  padding: 7px 11px;
+  font-size: 12px;
+}
+.vn-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 1.2fr;
+  background: #fff;
+  border: 1px solid #dce2ed;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.vn-summary > div {
+  padding: 12px 16px;
+  border-right: 1px solid #e5e9f1;
+  min-width: 0;
+}
+.vn-summary > div:last-child {
+  border: 0;
+}
+.vn-summary span {
+  display: block;
+  font-size: 11px;
+  color: #66758a;
+  margin-bottom: 5px;
+}
+.vn-summary strong {
+  font-size: 21px;
+  color: #1e304d;
+  font-variant-numeric: tabular-nums;
+}
+.vn-summary .vn-status-text {
+  font-size: 13px;
+  font-weight: 600;
+}
+.vn-summary .vn-summary-warning {
+  background: #fffaeb;
+}
+.vn-alert-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #8a550a;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.vn-alert-link:hover {
+  text-decoration: underline;
+}
+.vn-summary-note {
+  margin: 6px 0 12px;
+  font-size: 11px;
+  color: #68788f;
+}
+.vendor-negative-workspace .panel-heading {
+  padding: 13px 16px 10px;
+  gap: 12px;
+}
+.vendor-negative-workspace .panel-heading h3 {
+  font-size: 15px;
+}
+.vendor-negative-workspace .panel-heading p {
+  font-size: 11px;
+  margin-top: 4px;
+}
+.vendor-negative-workspace .save-controls {
+  gap: 8px;
+}
+.vendor-negative-workspace .save-controls > span {
+  font-size: 11px;
+}
+.vendor-negative-workspace .report-row-tools {
+  padding: 0 16px 10px;
+  margin: 0;
+}
+.vendor-negative-workspace .report-row-tools > span {
+  font-size: 11px;
+}
+.vendor-negative-workspace .vendor-negative-table th.vn-th-amount {
+  width: 23% !important;
+}
+.vendor-negative-workspace .vendor-negative-table td.vn-credit-balance {
+  padding: 5px 16px !important;
+  font-size: 12px;
+}
+.vendor-negative-workspace .vn-credit-balance small {
+  font-size: 10px;
+  margin-top: 1px;
+}
+.vendor-negative-workspace .vendor-negative-table .vn-row-edit {
+  opacity: 0.6;
+}
+.vendor-negative-workspace .vendor-negative-table .vn-row-edit:focus-visible {
+  opacity: 1;
+  outline: 2px solid #6366f1;
+}
+.vn-credit-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  margin: auto;
+  padding: 26px;
+  border: 1px solid #e3e7ee;
+  border-radius: 16px;
+  background: #fff;
+  color: #20314c;
+  box-shadow: 0 24px 80px #0f172a40;
+  overflow: auto;
+}
+.vn-credit-dialog::backdrop {
+  background: #15223866;
+  backdrop-filter: blur(3px);
+}
+.vn-dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: #f1f4f8;
+  border-radius: 8px;
+  color: #53627b;
+  cursor: pointer;
+}
+.vn-dialog-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: #fff2cf;
+  color: #a7690b;
+  margin-bottom: 14px;
+}
+.vn-credit-dialog h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+.vn-credit-dialog p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #64748b;
+  margin: 0 0 18px;
+}
+.vn-dialog-balances {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #f0dfb5;
+  border-radius: 9px;
+  background: #fffbef;
+}
+.vn-dialog-balances li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0dfb5;
+  font-size: 13px;
+}
+.vn-dialog-balances li:last-child {
+  border-bottom: 0;
+}
+.vn-dialog-balances li > span {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.vn-dialog-balances strong {
+  text-align: right;
+  color: #8a550a;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.vn-dialog-balances small {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+.vn-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+@media (max-width: 900px) {
+  .vn-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .vn-summary > div {
+    border-bottom: 1px solid #e5e9f1;
+    padding: 10px 12px;
+  }
+  .vn-summary strong {
+    font-size: 18px;
+  }
+  .vendor-negative-workspace .panel-heading {
+    flex-wrap: wrap;
+  }
+  .vendor-negative-workspace .save-controls {
+    flex-wrap: wrap;
+  }
+}
+/* Shared medium-size KPI cards for both vendor reporting workspaces. */
+.vendor-report-kpis .section-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.vendor-report-kpis .section-caption small {
+  letter-spacing: 0;
+  font-size: 11px;
+}
+.vendor-report-kpis .vendor-card-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0;
+  margin: 0 0 14px;
+}
+.vendor-report-kpis .vendor-card {
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-content: start;
+  align-items: center;
+  gap: 7px 10px;
+  min-height: 104px;
+  padding: 13px 15px;
+  border: 1px solid #dce2ee;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ffffff, #f7f8fc);
+  box-shadow: 0 2px 5px #25395705;
+}
+.vendor-report-kpis .vendor-monogram {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #eee8fa;
+  color: #7957b8;
+  font-size: 11px;
+}
+.vendor-report-kpis .vendor-card h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #56657c;
+}
+.vendor-report-kpis .vendor-card strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  color: #243653;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.vendor-report-kpis .vendor-card > small {
+  font-size: 10px;
+  color: #77849a;
+}
+.vendor-report-kpis .vendor-meter {
+  height: 3px;
+  background: #e9e5f2;
+}
+.vendor-report-kpis .vendor-meter i {
+  background: #9b82c9;
+}
+main.vendor-reports-page {
+  padding-top: 18px;
+}
+.vendor-reports-page .page-heading {
+  margin-bottom: 14px;
+}
+.vendor-reports-page .page-heading .eyebrow {
+  display: none;
+}
+.vendor-reports-page .page-heading h1 {
+  margin: 0 0 4px;
+  font-size: 26px;
+}
+.vendor-reports-page .page-heading p {
+  margin: 0;
+  font-size: 13px;
+}
+.vendor-reports-page .vendor-toolbar {
+  margin-bottom: 10px;
+  gap: 8px;
+}
+.vendor-reports-page .vendor-toolbar .range-caption {
+  font-size: 11px;
+}
+.vendor-reports-page .vendor-report-selector {
+  gap: 7px;
+}
+.vendor-reports-page .vendor-report-selector select {
+  min-height: 34px;
+  padding: 7px 28px 7px 10px;
+  max-width: min(420px, 65vw);
+}
+.vendor-reports-page button.secondary,
+.vendor-reports-page button.primary {
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+.vendor-reports-page .panel-heading {
+  padding: 13px 16px 10px;
+  gap: 12px;
+}
+.vendor-reports-page .panel-heading h3 {
+  font-size: 15px;
+}
+.vendor-reports-page .panel-heading p {
+  margin-top: 4px;
+  font-size: 11px;
+}
+.vendor-reports-page .save-controls {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.vendor-reports-page .save-controls > span {
+  font-size: 11px;
+}
+.vendor-reports-page .report-row-tools {
+  padding: 0 16px 10px;
+  margin: 0;
+}
+.vendor-reports-page .report-row-tools > span {
+  font-size: 12px;
+}
+.vendor-reports-page .report-row-tools b {
+  font-size: 17px;
+}
+.vendor-reports-page .table-footer {
+  padding: 10px 16px;
+}
+@media (max-width: 1100px) {
+  .vendor-report-kpis .vendor-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .vendor-reports-page .panel-heading {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 760px) {
+  .vendor-report-kpis .vendor-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vendor-report-kpis .vendor-card {
+    padding: 12px;
+  }
+  .vendor-report-kpis .vendor-card strong {
+    font-size: 20px;
+  }
+}
+@media (max-width: 440px) {
+  .vendor-report-kpis .vendor-card-grid {
+    grid-template-columns: 1fr;
+  }
+}

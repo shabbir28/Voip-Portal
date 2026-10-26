@@ -1,8 +1,9 @@
+import { vendorCredit } from '../../shared/vendorCredit.js';
 import { z } from 'zod';
 import { id, text, date } from '../validation/schemas.js';
 
 const version = z.number().int().nonnegative();
-const negativeEntry = z.object({
+export const negativeEntry = z.object({
   vendor_id: id,
   amount: z
     .number()
@@ -14,6 +15,17 @@ const negativeEntry = z.object({
       'Use at most two decimal places',
     )
     .nullable(),
+  total_credit: z
+    .number()
+    .finite()
+    .min(0)
+    .max(9999999999.99)
+    .refine(
+      (n) => Math.abs(n * 100 - Math.round(n * 100)) < 0.0001,
+      'Use at most two decimal places',
+    )
+    .nullable()
+    .optional(),
   note: z.string().max(250).optional().default(''),
 });
 
@@ -27,9 +39,13 @@ const dateRange = z
 export function summarizeNegative(report) {
   const vendors = (report.config.vendors || []).map((v) => {
     const entry = (report.entries || []).find((e) => e.vendor_id === v.id);
-    const amount = entry && entry.amount !== null && !Number.isNaN(Number(entry.amount)) ? Number(entry.amount) : 0;
+    const amount =
+      entry && entry.amount !== null && !Number.isNaN(Number(entry.amount))
+        ? Number(entry.amount)
+        : 0;
     const note = entry?.note || '';
     return {
+      ...vendorCredit(entry?.total_credit, amount),
       id: v.id,
       name: v.name,
       amount,
@@ -66,7 +82,7 @@ export function registerVendorNegative(app, db) {
         `SELECT vr.id,vr.name,to_char(vr.report_date,'YYYY-MM-DD') AS report_date,vr.config,vr.entries,vr.version,vr.created_by,u.name AS creator_name,vr.created_at,vr.updated_at 
          FROM voip.vendor_negative_reports vr 
          LEFT JOIN voip.users u ON vr.created_by=u.id 
-         ORDER BY vr.id DESC LIMIT 1`
+         ORDER BY vr.id DESC LIMIT 1`,
       )
     ).rows[0];
 
@@ -149,12 +165,15 @@ export function registerVendorNegative(app, db) {
 
       const values = new Map((report.entries || []).map((e) => [e.vendor_id, e]));
       for (const e of data.entries) {
-        if (e.amount === null || (e.amount === 0 && !e.note)) {
+        const totalCredit =
+          e.total_credit === undefined ? values.get(e.vendor_id)?.total_credit : e.total_credit;
+        if ((e.amount === null || e.amount === 0) && !e.note && totalCredit == null) {
           values.delete(e.vendor_id);
         } else {
           values.set(e.vendor_id, {
             vendor_id: e.vendor_id,
-            amount: Math.round(Number(e.amount) * 100) / 100,
+            amount: e.amount === null ? null : Math.round(Number(e.amount) * 100) / 100,
+            total_credit: totalCredit ?? null,
             note: e.note || '',
           });
         }
@@ -328,10 +347,12 @@ export function registerVendorNegative(app, db) {
 
       const values = new Map((report.entries || []).map((e) => [e.vendor_id, e]));
       for (const e of data.entries) {
-        if (e.amount === null || (e.amount === 0 && !e.note)) {
+        const totalCredit =
+          e.total_credit === undefined ? values.get(e.vendor_id)?.total_credit : e.total_credit;
+        if ((e.amount === null || e.amount === 0) && !e.note && totalCredit == null) {
           values.delete(e.vendor_id);
         } else {
-          values.set(e.vendor_id, e);
+          values.set(e.vendor_id, { ...e, total_credit: totalCredit ?? null });
         }
       }
       report.entries = [...values.values()];
@@ -383,13 +404,14 @@ export function registerVendorNegative(app, db) {
       }
 
       if (data.action === 'clear') {
-        report.entries = report.entries.filter((e) => e.vendor_id !== vendorId);
+        report.entries = report.entries.map((e) =>
+          e.vendor_id === vendorId ? { ...e, amount: null, note: '' } : e,
+        );
         return { action: 'Vendor row cleared' };
       }
 
       if (data.action === 'remove') {
-        if (report.config.vendors.length <= 1)
-          return { error: 'Keep at least one vendor row.' };
+        if (report.config.vendors.length <= 1) return { error: 'Keep at least one vendor row.' };
         const saved = report.entries.filter((e) => e.vendor_id === vendorId);
         report.config.removedVendors = [
           ...removed.filter((v) => v.row.id !== vendorId),

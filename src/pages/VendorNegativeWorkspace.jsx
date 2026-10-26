@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   Building2,
   Plus,
   Pencil,
@@ -10,13 +11,13 @@ import {
 } from 'lucide-react';
 import { api, send } from '../services/api.js';
 import VendorNegativeModal from '../components/VendorNegativeModal.jsx';
+import VendorCreditAlert from '../components/VendorCreditAlert.jsx';
 import VendorSpendCards from '../components/VendorSpendCards.jsx';
+import { vendorCredit } from '../../shared/vendorCredit.js';
 import { money } from '../utils/format.js';
 import { downloadVendorNegative } from '../utils/vendorNegativeDownload.js';
 
-export default function VendorNegativeWorkspace({
-  onDirty,
-}) {
+export default function VendorNegativeWorkspace({ onDirty }) {
   const [vendors, setVendors] = useState([]);
   const [report, setReport] = useState(null);
   const [draft, setDraft] = useState({});
@@ -25,6 +26,13 @@ export default function VendorNegativeWorkspace({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [dismissedCreditAlert, setDismissedCreditAlert] = useState(null);
+  const savedLowCredit = (report?.summary?.vendors || []).filter((v) => v.lowCredit);
+  const creditAlertKey = savedLowCredit.map((v) => `${v.id}:${v.remainingCredit}`).join('|');
+
+  useEffect(() => {
+    if (!creditAlertKey) setDismissedCreditAlert(null);
+  }, [creditAlertKey]);
 
   const dirty = Object.keys(draft).length > 0;
 
@@ -98,15 +106,19 @@ export default function VendorNegativeWorkspace({
     const savedMap = new Map((report.entries || []).map((e) => [e.vendor_id, e]));
 
     const computedVendors = (report.config.vendors || []).map((v) => {
-      const rawAmount = Object.hasOwn(draft, v.id)
-        ? draft[v.id]
+      const rawAmount = Object.hasOwn(draft[v.id] || {}, 'amount')
+        ? draft[v.id].amount
         : (savedMap.get(v.id)?.amount ?? '');
 
-      const numAmount = rawAmount !== '' && !Number.isNaN(Number(rawAmount))
-        ? Math.max(0, Number(rawAmount))
-        : 0;
+      const numAmount =
+        rawAmount !== '' && !Number.isNaN(Number(rawAmount)) ? Math.max(0, Number(rawAmount)) : 0;
 
+      const rawCredit = Object.hasOwn(draft[v.id] || {}, 'total_credit')
+        ? draft[v.id].total_credit
+        : (savedMap.get(v.id)?.total_credit ?? '');
       return {
+        ...vendorCredit(rawCredit, numAmount),
+        rawCredit,
         id: v.id,
         name: v.name,
         amount: numAmount,
@@ -132,20 +144,40 @@ export default function VendorNegativeWorkspace({
     try {
       const savedMap = new Map((report.entries || []).map((e) => [e.vendor_id, e]));
       const entriesToSave = report.config.vendors.map((v) => {
-        const rawAmount = Object.hasOwn(draft, v.id)
-          ? draft[v.id]
+        const rawAmount = Object.hasOwn(draft[v.id] || {}, 'amount')
+          ? draft[v.id].amount
           : (savedMap.get(v.id)?.amount ?? '');
 
-        const numAmount = rawAmount === '' || Number.isNaN(Number(rawAmount))
-          ? null
-          : Math.max(0, Number(rawAmount));
+        const numAmount =
+          rawAmount === '' || Number.isNaN(Number(rawAmount)) ? null : Number(rawAmount);
 
         return {
           vendor_id: v.id,
           amount: numAmount,
+          note: savedMap.get(v.id)?.note || '',
+          total_credit: (() => {
+            const raw = Object.hasOwn(draft[v.id] || {}, 'total_credit')
+              ? draft[v.id].total_credit
+              : (savedMap.get(v.id)?.total_credit ?? '');
+            return raw === '' ? null : Number(raw);
+          })(),
         };
       });
 
+      if (
+        entriesToSave.some((e) =>
+          [e.amount, e.total_credit].some(
+            (n) =>
+              n !== null &&
+              (!Number.isFinite(n) ||
+                n < 0 ||
+                n > 9999999999.99 ||
+                Math.abs(n * 100 - Math.round(n * 100)) >= 0.0001),
+          ),
+        )
+      ) {
+        throw new Error('Enter non-negative USD amounts with at most two decimal places.');
+      }
       const res = await send(
         '/vendor-negative/sheet',
         {
@@ -166,10 +198,10 @@ export default function VendorNegativeWorkspace({
     }
   }
 
-  function handleAmountChange(vendorId, val) {
+  function handleAmountChange(vendorId, val, field = 'amount') {
     setDraft((prev) => ({
       ...prev,
-      [vendorId]: val,
+      [vendorId]: { ...prev[vendorId], [field]: val },
     }));
   }
 
@@ -188,9 +220,7 @@ export default function VendorNegativeWorkspace({
 
       {/* Standing Toolbar: Refresh & Status */}
       <div className="vendor-toolbar">
-        <span className="range-caption">
-          Standing Vendor Negative Adjustments · Permanent Balance
-        </span>
+        <span className="range-caption">Vendor balances · Permanent ledger</span>
         <button
           className="secondary"
           disabled={busy || loading}
@@ -216,15 +246,43 @@ export default function VendorNegativeWorkspace({
         </div>
       ) : (
         <>
-          {/* Vendor Spend Cards Section */}
-          <section className="vendor-report-kpis" aria-label="Vendor negative spend">
+          <section className="vn-summary" aria-label="Vendor balance summary">
+            <div>
+              <span>Total credit</span>
+              <strong>
+                {money(liveSummary.vendors.reduce((n, v) => n + (v.totalCredit ?? 0), 0))}
+              </strong>
+            </div>
+            <div>
+              <span>Vendor negative</span>
+              <strong>{money(liveSummary.total)}</strong>
+            </div>
+            <div>
+              <span>Remaining credit</span>
+              <strong>
+                {money(liveSummary.vendors.reduce((n, v) => n + (v.remainingCredit ?? 0), 0))}
+              </strong>
+            </div>
+            <div className={savedLowCredit.length ? 'vn-summary-warning' : ''}>
+              <span>Credit status · {liveSummary.vendors.length} vendors</span>
+              {savedLowCredit.length ? (
+                <button className="vn-alert-link" onClick={() => setDismissedCreditAlert(null)}>
+                  <AlertTriangle size={16} /> {savedLowCredit.length} low credit · View alert
+                </button>
+              ) : (
+                <strong className="vn-status-text">No low-credit alerts</strong>
+              )}
+            </div>
+          </section>
+          <div className="vn-summary-note">
+            {dirty ? 'Live preview · Unsaved changes' : 'Saved balances'} · Blank credit is not
+            included in credit totals
+          </div>
+
+          <section className="vendor-report-kpis" aria-label="Vendor negative spend by vendor">
             <div className="section-caption">
-              <span>VENDOR NEGATIVE · STANDING ADJUSTMENTS</span>
-              <small>
-                {dirty
-                  ? 'Live totals · Includes unsaved entries'
-                  : 'Current saved totals'}
-              </small>
+              <span>VENDOR NEGATIVE · BY VENDOR</span>
+              <small>{dirty ? 'Live totals · Unsaved changes' : 'Saved totals'}</small>
             </div>
             <VendorSpendCards vendors={liveSummary.vendors} total={liveSummary.total} />
           </section>
@@ -234,15 +292,11 @@ export default function VendorNegativeWorkspace({
             <div className="panel-heading">
               <div>
                 <h3>Vendor negative adjustments</h3>
-                <p>
-                  Enter negative spend in USD · Blank = not reported · Changes persist permanently
-                </p>
+                <p>USD · Remaining = total credit − vendor negative</p>
               </div>
               <div className="save-controls">
                 <span className={dirty ? 'unsaved' : 'saved'}>
-                  {dirty
-                    ? `${Object.keys(draft).length} unsaved changes`
-                    : 'All changes saved'}
+                  {dirty ? `${Object.keys(draft).length} unsaved changes` : 'All changes saved'}
                 </span>
                 <button
                   className="secondary"
@@ -257,11 +311,7 @@ export default function VendorNegativeWorkspace({
                 >
                   <Download size={14} /> Download report
                 </button>
-                <button
-                  className="primary"
-                  disabled={!dirty || busy}
-                  onClick={save}
-                >
+                <button className="primary" disabled={!dirty || busy} onClick={save}>
                   <Save size={14} />
                   {busy ? 'Saving…' : 'Save changes'}
                 </button>
@@ -277,9 +327,7 @@ export default function VendorNegativeWorkspace({
               >
                 <Plus size={14} /> Add vendor row
               </button>
-              <span>
-                Current vendor negative total <b>{money(liveSummary.total)}</b>
-              </span>
+              <span>{liveSummary.vendors.length} vendors · Blank = not reported</span>
             </div>
 
             {dirty && (
@@ -290,9 +338,7 @@ export default function VendorNegativeWorkspace({
 
             {!!report.config?.removedVendors?.length && (
               <details className="removed-rows">
-                <summary>
-                  Restore removed rows ({report.config.removedVendors.length})
-                </summary>
+                <summary>Restore removed rows ({report.config.removedVendors.length})</summary>
                 {report.config.removedVendors.map((v) => (
                   <div key={v.row.id}>
                     <span>{v.row.name}</span>
@@ -327,12 +373,14 @@ export default function VendorNegativeWorkspace({
                 <thead>
                   <tr>
                     <th className="vn-th-vendor">Vendor</th>
+                    <th className="vn-th-amount">Total Credit ($)</th>
                     <th className="vn-th-amount">Vendor Negative ($)</th>
+                    <th className="vn-th-amount">Remaining Credit ($)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {liveSummary.vendors.map((v) => {
-                    const isDirty = Object.hasOwn(draft, v.id);
+                    const isDirty = Object.hasOwn(draft[v.id] || {}, 'amount');
                     return (
                       <tr key={v.id}>
                         <td className="vn-vendor-cell">
@@ -358,6 +406,28 @@ export default function VendorNegativeWorkspace({
                             max="9999999999.99"
                             step="0.01"
                             inputMode="decimal"
+                            id={'vendor-credit-' + v.id}
+                            aria-label={v.name + ' total credit'}
+                            disabled={busy}
+                            className={
+                              Object.hasOwn(draft[v.id] || {}, 'total_credit')
+                                ? 'cell-dirty vn-amount-input'
+                                : 'vn-amount-input'
+                            }
+                            value={v.rawCredit}
+                            placeholder="—"
+                            onChange={(e) =>
+                              handleAmountChange(v.id, e.target.value, 'total_credit')
+                            }
+                          />
+                        </td>
+                        <td className="vn-amount-cell">
+                          <input
+                            type="number"
+                            min="0"
+                            max="9999999999.99"
+                            step="0.01"
+                            inputMode="decimal"
                             aria-label={`${v.name} negative amount`}
                             disabled={busy}
                             className={isDirty ? 'cell-dirty vn-amount-input' : 'vn-amount-input'}
@@ -366,14 +436,26 @@ export default function VendorNegativeWorkspace({
                             onChange={(e) => handleAmountChange(v.id, e.target.value)}
                           />
                         </td>
+                        <td className={'vn-credit-balance' + (v.lowCredit ? ' is-low' : '')}>
+                          <strong>
+                            {v.remainingCredit === null ? '—' : money(v.remainingCredit)}
+                          </strong>
+                          {v.lowCredit && <small>Low credit · Recharge</small>}
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
                 <tfoot>
                   <tr className="vn-total-row">
-                    <td className="vn-total-label">Total Vendor Negative</td>
+                    <td className="vn-total-label">Totals</td>
+                    <td className="vn-total-amount">
+                      {money(liveSummary.vendors.reduce((n, v) => n + (v.totalCredit ?? 0), 0))}
+                    </td>
                     <td className="vn-total-amount">{money(liveSummary.total)}</td>
+                    <td className="vn-total-amount">
+                      {money(liveSummary.vendors.reduce((n, v) => n + (v.remainingCredit ?? 0), 0))}
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -382,6 +464,16 @@ export default function VendorNegativeWorkspace({
         </>
       )}
 
+      {!!creditAlertKey && dismissedCreditAlert !== creditAlertKey && !modal && !loading && (
+        <VendorCreditAlert
+          vendors={savedLowCredit}
+          close={() => setDismissedCreditAlert(creditAlertKey)}
+          review={() => {
+            setDismissedCreditAlert(creditAlertKey);
+            document.getElementById('vendor-credit-' + savedLowCredit[0].id)?.focus();
+          }}
+        />
+      )}
       {modal && (
         <VendorNegativeModal
           kind={modal.kind}

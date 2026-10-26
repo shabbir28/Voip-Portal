@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Pencil,
   RotateCcw,
@@ -45,12 +45,75 @@ export default function DailyReportPage({
       setToastMsg('');
       await new Promise((r) => setTimeout(r, 120));
 
+      await document.fonts.ready;
       const canvas = await html2canvas(fullReportRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#0f172a',
-        windowWidth: 1560,
+        backgroundColor: '#ffffff',
+        onclone: (_document, report) => {
+          // Capture the actual report, including both subtotal rows and current filters.
+          // Expand only the cloned sheet, leaving the user's scroll position untouched.
+          const scroll = report.querySelector('.sheet-scroll');
+          const width = Math.max(1600, fullReportRef.current.clientWidth, scroll.scrollWidth + 2);
+          report.style.width = width + 'px';
+          report.style.maxWidth = 'none';
+          report.style.height = 'auto';
+          report.style.maxHeight = 'none';
+          report.style.overflow = 'visible';
+          for (let parent = report.parentElement; parent; parent = parent.parentElement) {
+            parent.style.setProperty('overflow', 'visible', 'important');
+            parent.style.setProperty('max-height', 'none', 'important');
+          }
+          scroll.style.setProperty('max-height', 'none', 'important');
+          scroll.style.setProperty('height', 'auto', 'important');
+          scroll.style.setProperty('overflow', 'visible', 'important');
+          scroll.scrollTop = 0;
+          scroll.scrollLeft = 0;
+          report.querySelectorAll('th, td').forEach((cell) => {
+            cell.style.setProperty('position', 'static', 'important');
+          });
+          report.classList.add('spreadsheet-capture');
+          report
+            .querySelectorAll(
+              '.filters, .report-row-tools, .sheet-hint, .removed-rows, button, .save-controls',
+            )
+            .forEach((el) => el.remove());
+          const heading = report.querySelector('.panel-heading');
+          const title = _document.createElement('h3');
+          title.textContent = sheet.name;
+          const date = _document.createElement('p');
+          date.textContent = sheet.report_date + ' · ' + sheet.config.timezone;
+          heading.replaceChildren(title, date);
+          const table = report.querySelector('.entry-table');
+          const slotHeader = table.querySelector('thead tr');
+          table.querySelectorAll('.campaign-row').forEach((row) => {
+            const repeated = slotHeader.cloneNode(true);
+            repeated.classList.add('capture-slot-header');
+            row.after(repeated);
+          });
+          table.querySelector('thead').remove();
+          // Use text for inputs so blanks, zeroes and unsaved values render reliably.
+          report.querySelectorAll('.entry-table input').forEach((input) => {
+            const value = _document.createElement('span');
+            const style = _document.defaultView.getComputedStyle(input);
+            value.textContent = input.value === '' ? '—' : input.value;
+            Object.assign(value.style, {
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              width: '100%',
+              height: '100%',
+              minHeight: '25px',
+              boxSizing: 'border-box',
+              font: style.font,
+              padding: style.padding,
+              background: 'transparent',
+              color: input.value === '' ? '#64748b' : '#102a43',
+            });
+            input.replaceWith(value);
+          });
+        },
       });
 
       const dateStr = sheet.report_date || 'report';
@@ -65,9 +128,7 @@ export default function DailyReportPage({
         canvas.toBlob(async (blob) => {
           if (blob) {
             try {
-              await navigator.clipboard.write([
-                new ClipboardItem({ 'image/png': blob }),
-              ]);
+              await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
               setToastMsg('Screenshot saved & copied to clipboard! Paste directly in group.');
             } catch {
               setToastMsg('Screenshot downloaded successfully!');
@@ -87,7 +148,7 @@ export default function DailyReportPage({
   }
 
   return (
-    <section className="panel sheet-panel">
+    <section ref={fullReportRef} className="panel sheet-panel daily-report-sheet">
       <div className="panel-heading">
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
@@ -104,9 +165,10 @@ export default function DailyReportPage({
           <button
             type="button"
             className="secondary ss-btn"
+            data-html2canvas-ignore="true"
             disabled={capturing}
             onClick={captureFullSheet}
-            title="Capture full report screenshot with all campaigns for WhatsApp/group sharing"
+            title="Capture the report exactly as displayed, including all rows and columns"
           >
             {capturing ? (
               <>
@@ -165,6 +227,13 @@ export default function DailyReportPage({
       </div>
       <div className="sheet-scroll">
         <table className="entry-table">
+          <colgroup>
+            <col className="daily-name-column" />
+            {sheet.config.slots.map((_, i) => (
+              <col key={i} />
+            ))}
+            <col className="daily-total-column" />
+          </colgroup>
           <thead>
             <tr>
               <th>Campaign / dialer</th>
@@ -217,11 +286,12 @@ export default function DailyReportPage({
                       <td colSpan={sheet.config.slots.length + 2}>
                         <div className="campaign-row-content">
                           <div className="campaign-left">
-                            <span className="campaign-dot" style={{ background: g.color || '#818cf8' }} />
+                            <span
+                              className="campaign-dot"
+                              style={{ background: g.color || '#818cf8' }}
+                            />
                             <strong className="campaign-name">{g.name}</strong>
-                            <span className="campaign-count">
-                              {groupDialers.length} dialers
-                            </span>
+                            <span className="campaign-count">{groupDialers.length} dialers</span>
                           </div>
                           <button
                             className="add-row-btn"
@@ -239,7 +309,12 @@ export default function DailyReportPage({
                           <div className="dialer-cell-wrap">
                             <Radio size={13} className="dialer-radio-icon" />
                             <span className="row-label" title={d.name}>
-                              {d.name}
+                              {d.name.split(/(?<=[_ -])/).map((part, index) => (
+                                <React.Fragment key={index}>
+                                  {part}
+                                  <wbr />
+                                </React.Fragment>
+                              ))}
                             </span>
                             <button
                               className="icon-btn row-edit"
@@ -309,7 +384,10 @@ export default function DailyReportPage({
                     </tr>
                     {/* Row 2: Progressive Cumulative running TOTAL (e.g. ACA TOTAL) */}
                     <tr className="subtotal-row campaign-cumulative-total">
-                      <td className="campaign-total-label cumulative-label" title={`${g.name} TOTAL`}>
+                      <td
+                        className="campaign-total-label cumulative-label"
+                        title={`${g.name} TOTAL`}
+                      >
                         {g.name} TOTAL
                       </td>
                       {campaignCumulativeTotals.map((cumVal, i) => {
@@ -324,7 +402,9 @@ export default function DailyReportPage({
                           </td>
                         );
                       })}
-                      <td className="subtotal-grand cumulative-grand">{money(campaignGrandTotal)}</td>
+                      <td className="subtotal-grand cumulative-grand">
+                        {money(campaignGrandTotal)}
+                      </td>
                     </tr>
                   </React.Fragment>
                 );
@@ -375,194 +455,8 @@ export default function DailyReportPage({
         </span>
       </div>
 
-      {/* Hidden off-screen export container for 2x Retina complete report screenshot */}
-      <div className="ss-export-container" aria-hidden="true">
-        <div ref={fullReportRef} className="ss-export-card">
-          <div className="ss-export-header">
-            <div className="ss-header-left">
-              <div className="ss-title-row">
-                <h2>{sheet.name || 'Balitech · VoIP Shift Report'}</h2>
-                <span className="ss-badge">FINAL REPORT</span>
-              </div>
-              <div className="ss-meta-row">
-                <span>📅 {sheet.report_date}</span>
-                <span>
-                  🕒 {sheet.config.slots[0]?.start} – {sheet.config.slots[sheet.config.slots.length - 1]?.end} (
-                  {sheet.config.timezone || 'America/New_York'})
-                </span>
-                <span>👥 {summary.dialers.length} Active Dialers</span>
-                {sheet.creator_name && <span>👤 Admin: {sheet.creator_name}</span>}
-              </div>
-            </div>
-            <div className="ss-header-right">
-              <div className="ss-total-box">
-                <span className="ss-total-label">TOTAL SHIFT SPEND</span>
-                <strong className="ss-total-amount">{money(summary.total)}</strong>
-              </div>
-            </div>
-          </div>
-
-          <table className="ss-export-table">
-            <thead>
-              <tr>
-                <th className="ss-th-dialer">Campaign / Dialer</th>
-                {sheet.config.slots.map((s, i) => {
-                  const { time, period } = clockParts(s.start);
-                  return (
-                    <th key={i} className="ss-th-slot">
-                      <div className="ss-th-time">{time}</div>
-                      <div className="ss-th-period">{period}</div>
-                    </th>
-                  );
-                })}
-                <th className="ss-th-total">Total USD</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groups.map((g) => {
-                const campaignDialers = summary.dialers.filter((d) => d.campaign_id === g.id);
-                if (campaignDialers.length === 0) return null;
-                const campaignSubtotal = campaignDialers.reduce((n, d) => n + d.total, 0);
-                const campaignDialerIdSet = new Set(campaignDialers.map((d) => d.id));
-
-                const ssSlotTotals = sheet.config.slots.map((_, i) =>
-                  liveEntries
-                    .filter((e) => e.slot === i && campaignDialerIdSet.has(e.dialer_id))
-                    .reduce((n, e) => n + Number(e.amount), 0),
-                );
-
-                const ssLastActiveSlot = ssSlotTotals.reduce(
-                  (max, val, idx) => (val > 0 ? idx : max),
-                  -1,
-                );
-
-                let ssRunning = 0;
-                const ssCumulativeTotals = ssSlotTotals.map((val) => {
-                  ssRunning += val;
-                  return ssRunning;
-                });
-
-                return (
-                  <React.Fragment key={g.id}>
-                    <tr className="ss-campaign-row">
-                      <td colSpan={sheet.config.slots.length + 2}>
-                        <div className="ss-campaign-title">
-                          <span className="ss-campaign-dot" style={{ background: g.color || '#818cf8' }} />
-                          <strong className="ss-campaign-name">{g.name}</strong>
-                          <span className="ss-campaign-count">{campaignDialers.length} dialers</span>
-                        </div>
-                      </td>
-                    </tr>
-                    {campaignDialers.map((d) => (
-                      <tr key={d.id} className="ss-dialer-row">
-                        <td className="ss-td-dialer">
-                          <div className="ss-dialer-wrap">
-                            <span className="ss-dialer-bullet" style={{ background: g.color || '#818cf8' }} />
-                            <span className="ss-dialer-name">{d.name}</span>
-                          </div>
-                        </td>
-                        {sheet.config.slots.map((s, i) => {
-                          const key = `${d.id}:${i}`;
-                          const stored =
-                            sheet.entries.find((e) => e.dialer_id === d.id && e.slot === i)?.amount ?? '';
-                          const rawVal = Object.hasOwn(draft, key) ? draft[key] : stored;
-                          const numVal = Number(rawVal);
-                          const hasVal = rawVal !== '' && !Number.isNaN(numVal) && numVal > 0;
-                          return (
-                            <td key={i} className={`ss-td-cell ${hasVal ? 'ss-has-val' : 'ss-empty-cell'}`}>
-                              {hasVal ? money(numVal) : '—'}
-                            </td>
-                          );
-                        })}
-                        <td className="ss-td-row-total">{money(d.total)}</td>
-                      </tr>
-                    ))}
-                    {/* Row 1: SS Interval Total */}
-                    <tr className="ss-subtotal-row ss-interval-row">
-                      <td className="ss-td-dialer">{g.name} Total</td>
-                      {sheet.config.slots.map((_, i) => {
-                        const slotTotal = ssSlotTotals[i];
-                        return (
-                          <td
-                            key={i}
-                            className={`ss-td-cell ${slotTotal > 0 ? 'ss-has-val' : 'ss-empty-cell'}`}
-                          >
-                            {slotTotal > 0 ? money(slotTotal) : '—'}
-                          </td>
-                        );
-                      })}
-                      <td className="ss-td-row-total ss-subtotal-grand">{money(campaignSubtotal)}</td>
-                    </tr>
-                    {/* Row 2: SS Cumulative Running TOTAL */}
-                    <tr className="ss-subtotal-row ss-cumulative-row">
-                      <td className="ss-td-dialer ss-cumulative-label">{g.name} TOTAL</td>
-                      {sheet.config.slots.map((_, i) => {
-                        const cumTotal = ssCumulativeTotals[i];
-                        const hasSpend = i <= ssLastActiveSlot && cumTotal > 0;
-                        return (
-                          <td
-                            key={i}
-                            className={`ss-td-cell ${hasSpend ? 'ss-cumulative-cell' : 'ss-empty-cell'}`}
-                          >
-                            {hasSpend ? money(cumTotal) : '—'}
-                          </td>
-                        );
-                      })}
-                      <td className="ss-td-row-total ss-cumulative-grand">{money(campaignSubtotal)}</td>
-                    </tr>
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="ss-tfoot-total">
-                <td className="ss-td-dialer">Full Report Total</td>
-                {summary.intervals.map((inv) => (
-                  <td
-                    key={inv.slot}
-                    className={`ss-td-cell ${inv.total > 0 ? 'ss-foot-cell' : 'ss-empty-cell'}`}
-                  >
-                    {inv.total > 0 ? money(inv.total) : '—'}
-                  </td>
-                ))}
-                <td className="ss-td-row-total ss-foot-grand">{money(summary.total)}</td>
-              </tr>
-              <tr className="ss-tfoot-running">
-                <td className="ss-td-dialer">Running Total</td>
-                {summary.intervals.map((inv) => {
-                  const lastActiveSlot = summary.intervals.reduce(
-                    (max, item) => (item.total > 0 ? item.slot : max),
-                    -1,
-                  );
-                  const isPastOrActive = inv.slot <= lastActiveSlot;
-                  const hasSpend = isPastOrActive && inv.cumulative > 0;
-                  return (
-                    <td
-                      key={inv.slot}
-                      className={`ss-td-cell ${hasSpend ? 'ss-running-cell' : 'ss-empty-cell'}`}
-                    >
-                      {hasSpend ? money(inv.cumulative) : '—'}
-                    </td>
-                  );
-                })}
-                <td className="ss-td-row-total ss-running-grand">{money(summary.total)}</td>
-              </tr>
-            </tfoot>
-          </table>
-
-          <div className="ss-export-footer">
-            <span>
-              VoIP Portal · High-precision reporting · Generated {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </span>
-            <span>
-              Version {sheet.version} · {summary.entered} saved entries
-            </span>
-          </div>
-        </div>
-      </div>
-
       {toastMsg && (
-        <div className="ss-toast">
+        <div className="ss-toast" data-html2canvas-ignore="true">
           <CheckCheck size={16} />
           <span>{toastMsg}</span>
         </div>

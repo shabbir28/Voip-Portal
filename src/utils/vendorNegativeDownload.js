@@ -9,7 +9,9 @@ export function vendorNegativeCsv(reports) {
       'Date (US Eastern)',
       'Report Name',
       'Vendor',
+      'Total Credit (USD)',
       'Vendor Negative Amount (USD)',
+      'Remaining Credit (USD)',
     ],
   ];
 
@@ -20,14 +22,18 @@ export function vendorNegativeCsv(reports) {
         report.report_date,
         report.name,
         v.name,
+        v.totalCredit,
         v.amount || 0,
+        v.remainingCredit,
       ]);
     }
     rows.push([
       report.report_date,
       report.name,
       'Total Vendor Negative',
+      vendors.reduce((n, v) => n + (v.totalCredit ?? 0), 0),
       report.summary?.total || 0,
+      vendors.reduce((n, v) => n + (v.remainingCredit ?? 0), 0),
     ]);
   }
 

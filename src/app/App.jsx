@@ -553,7 +553,7 @@ export default function App() {
             />
           </div>
         </header>
-        <main>
+        <main className={page === 'vendor-negative' ? 'vendor-credit-page' : page === 'vendor-reports' ? 'vendor-reports-page' : undefined}>
           <div className="page-heading">
             <div>
               <div className="eyebrow">YOUR OPERATIONS, AT A GLANCE</div>

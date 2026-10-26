@@ -7,7 +7,7 @@ export default function VendorSpendCards({ vendors, total }) {
         <div className="vendor-card" key={v.id}>
           <span className="vendor-monogram">{v.name.slice(0, 2).toUpperCase()}</span>
           <div>
-            <h4>{v.name}</h4>
+            <h4 title={v.name}>{v.name}</h4>
             <strong>{money(v.total)}</strong>
           </div>
           <small>{total ? ((v.total / total) * 100).toFixed(1) : '0'}% of vendor spend</small>
