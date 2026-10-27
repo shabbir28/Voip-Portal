@@ -97,7 +97,10 @@ export default function DailyReportPage({
           report.querySelectorAll('.entry-table input').forEach((input) => {
             const value = _document.createElement('span');
             const style = _document.defaultView.getComputedStyle(input);
-            value.textContent = input.value === '' ? '—' : input.value;
+            const rawVal = input.value !== undefined && input.value !== null ? String(input.value).trim() : '';
+            const isBlank = rawVal === '';
+            value.className = `capture-cell-value ${isBlank ? 'is-blank' : 'has-amount'}`;
+            value.textContent = isBlank ? '—' : rawVal;
             Object.assign(value.style, {
               display: 'flex',
               alignItems: 'center',
@@ -106,10 +109,15 @@ export default function DailyReportPage({
               height: '100%',
               minHeight: '25px',
               boxSizing: 'border-box',
-              font: style.font,
-              padding: style.padding,
+              fontFamily: style.fontFamily || "'DM Sans', sans-serif",
+              fontSize: '11px',
+              fontWeight: isBlank ? '700' : '800',
+              padding: style.padding || '0 4px',
+              paddingRight: '6px',
               background: 'transparent',
-              color: input.value === '' ? '#64748b' : '#102a43',
+              color: isBlank ? '#55758b' : '#000000',
+              letterSpacing: '0.2px',
+              fontVariantNumeric: 'tabular-nums',
             });
             input.replaceWith(value);
           });
