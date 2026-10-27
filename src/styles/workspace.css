@@ -1667,7 +1667,7 @@ main {
 }
 .spreadsheet-capture .panel-heading {
   display: block;
-  padding: 10px 12px;
+  padding: 14px 16px;
   text-align: center;
   background: #ffa000;
   border-bottom: 2px solid #17374f;
@@ -1675,15 +1675,15 @@ main {
 .spreadsheet-capture .panel-heading h3 {
   color: #0a192f;
   font-family: Georgia, serif;
-  font-size: 25px;
-  font-weight: 800;
+  font-size: 28px;
+  font-weight: 900;
   margin: 0;
 }
 .spreadsheet-capture .panel-heading p {
   color: #17374f;
-  font-size: 11px;
-  font-weight: 700;
-  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  margin: 5px 0 0;
 }
 .spreadsheet-capture .sheet-scroll {
   border: 0;
@@ -1694,20 +1694,21 @@ main {
 .spreadsheet-capture .entry-table td {
   box-shadow: none !important;
   border: 1px solid #55758b !important;
-  height: 25px;
+  height: 38px;
   color: #000000 !important;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 850;
 }
 .spreadsheet-capture .entry-table tbody tr:not(.campaign-row):not(.subtotal-row) td {
   background: #f4f8df !important;
+  height: 38px;
 }
 .spreadsheet-capture .entry-table tbody td.dialer-cell {
   background: #c6dfee !important;
 }
 .spreadsheet-capture .entry-table .dialer-cell-wrap .row-label {
-  font-size: 11px;
-  font-weight: 800 !important;
+  font-size: 15px;
+  font-weight: 900 !important;
   color: #000000 !important;
   padding: 3px 0;
 }
@@ -1716,74 +1717,82 @@ main {
 }
 .spreadsheet-capture .entry-table .campaign-row td {
   background: #10588c !important;
-  padding: 6px 10px;
+  padding: 8px 14px;
   border-top: 3px solid #17374f !important;
+  height: 42px;
 }
 .spreadsheet-capture .campaign-name {
   color: #fff0a6 !important;
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 19px;
+  font-weight: 900;
 }
 .spreadsheet-capture .campaign-count {
   color: white;
   background: transparent;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 750;
 }
 .spreadsheet-capture .entry-table .capture-slot-header th {
   background: #c6dfee !important;
   color: #000000 !important;
-  padding: 4px 2px;
-  font-weight: 800 !important;
+  padding: 6px 2px;
+  font-weight: 850 !important;
 }
 .spreadsheet-capture .entry-table .capture-slot-header .th-time-val {
   color: #000000 !important;
-  font-size: 11px;
-  font-weight: 800 !important;
+  font-size: 14px;
+  font-weight: 900 !important;
 }
 .spreadsheet-capture .entry-table .capture-slot-header .th-time-period {
   color: #17374f !important;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800 !important;
 }
 .spreadsheet-capture .capture-cell-value {
-  font-weight: 800 !important;
-  font-size: 11px !important;
+  font-weight: 900 !important;
+  font-size: 17.5px !important;
   color: #000000 !important;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.2px;
 }
 .spreadsheet-capture .capture-cell-value.is-blank {
-  font-weight: 700 !important;
-  color: #55758b !important;
+  font-weight: 800 !important;
+  font-size: 17.5px !important;
+  color: #475569 !important;
 }
 .spreadsheet-capture .entry-table td.row-total {
   font-weight: 900 !important;
-  font-size: 11px !important;
+  font-size: 17px !important;
   color: #000000 !important;
   background: #f4f8df !important;
 }
 .spreadsheet-capture .entry-table .subtotal-row.campaign-interval-total td {
   background: #dcebf5 !important;
   color: #000000 !important;
-  font-weight: 800 !important;
-  font-size: 11px !important;
+  font-weight: 900 !important;
+  font-size: 16px !important;
+  height: 38px;
 }
 .spreadsheet-capture .entry-table .subtotal-row.campaign-interval-total .campaign-total-label {
   color: #000000 !important;
-  font-weight: 800 !important;
+  font-weight: 900 !important;
+  font-size: 15px !important;
 }
 .spreadsheet-capture .entry-table .subtotal-row.campaign-cumulative-total td {
   background: #b9d9ed !important;
   color: #000000 !important;
   font-weight: 900 !important;
-  font-size: 11px !important;
+  font-size: 16px !important;
+  height: 38px;
 }
 .spreadsheet-capture .entry-table .subtotal-row.campaign-cumulative-total .campaign-total-label {
   color: #000000 !important;
   font-weight: 900 !important;
+  font-size: 15px !important;
 }
 .spreadsheet-capture .entry-table .subtotal-grand {
   font-weight: 900 !important;
+  font-size: 17px !important;
   color: #000000 !important;
 }
 .spreadsheet-capture .subtotal-val-active,
@@ -1792,45 +1801,47 @@ main {
 .spreadsheet-capture .running-val-active {
   color: #000000 !important;
   font-weight: 900 !important;
-  font-size: 11px !important;
+  font-size: 16px !important;
 }
 .spreadsheet-capture .subtotal-val-muted,
 .spreadsheet-capture .foot-val-muted,
 .spreadsheet-capture .running-val-muted {
-  color: #55758b !important;
-  font-weight: 700 !important;
-  font-size: 11px !important;
+  color: #475569 !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
 }
 .spreadsheet-capture .entry-table tfoot .full-total-row td {
   background: #10588c !important;
   color: #ffffff !important;
   font-weight: 900 !important;
-  font-size: 11px !important;
-  height: 32px;
+  font-size: 16px !important;
+  height: 42px;
 }
 .spreadsheet-capture .entry-table tfoot .full-total-row td.foot-grand {
   background: #10588c !important;
   color: #ffffff !important;
   font-weight: 900 !important;
+  font-size: 18px !important;
 }
 .spreadsheet-capture .entry-table tfoot .running-total-row td {
   background: #c6dfee !important;
   color: #000000 !important;
   font-weight: 900 !important;
-  font-size: 11px !important;
-  height: 28px;
+  font-size: 16px !important;
+  height: 40px;
 }
 .spreadsheet-capture .entry-table tfoot .running-total-row td.running-grand {
   background: #10588c !important;
   color: #ffffff !important;
   font-weight: 900 !important;
+  font-size: 18px !important;
 }
 .spreadsheet-capture .table-footer {
-  padding: 7px 10px;
+  padding: 10px 14px;
   background: white;
   color: #17374f;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 750;
 }
 /* Balanced name column: preserve full names without squeezing the row label. */
 .daily-report-sheet:not(.spreadsheet-capture) .entry-table td.dialer-cell {

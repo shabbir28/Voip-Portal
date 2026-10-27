@@ -55,7 +55,7 @@ export default function DailyReportPage({
           // Capture the actual report, including both subtotal rows and current filters.
           // Expand only the cloned sheet, leaving the user's scroll position untouched.
           const scroll = report.querySelector('.sheet-scroll');
-          const width = Math.max(1600, fullReportRef.current.clientWidth, scroll.scrollWidth + 2);
+          const width = Math.max(2350, fullReportRef.current.clientWidth, scroll.scrollWidth + 2);
           report.style.width = width + 'px';
           report.style.maxWidth = 'none';
           report.style.height = 'auto';
@@ -107,15 +107,15 @@ export default function DailyReportPage({
               justifyContent: 'flex-end',
               width: '100%',
               height: '100%',
-              minHeight: '25px',
+              minHeight: '38px',
               boxSizing: 'border-box',
-              fontFamily: style.fontFamily || "'DM Sans', sans-serif",
-              fontSize: '11px',
-              fontWeight: isBlank ? '700' : '800',
+              fontFamily: style.fontFamily || "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+              fontSize: '17.5px',
+              fontWeight: '900',
               padding: style.padding || '0 4px',
-              paddingRight: '6px',
+              paddingRight: '8px',
               background: 'transparent',
-              color: isBlank ? '#55758b' : '#000000',
+              color: isBlank ? '#475569' : '#000000',
               letterSpacing: '0.2px',
               fontVariantNumeric: 'tabular-nums',
             });
