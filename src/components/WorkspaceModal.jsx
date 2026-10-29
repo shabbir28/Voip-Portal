@@ -2,7 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { LoaderCircle, Plus, Save } from 'lucide-react';
 import Modal from './Modal.jsx';
 import { send } from '../services/api.js';
-import { today } from '../utils/format.js';
+import { today, clockLabel } from '../utils/format.js';
+import {
+  HALF_HOUR_TIMES,
+  addMinutesToTime,
+  DEFAULT_SHIFT_START,
+  DEFAULT_SHIFT_LAST_SLOT,
+} from '../../shared/reporting.js';
 export default function WorkspaceModal({ modal, close, catalog, onCreated, dirty }) {
   const type = typeof modal === 'string' ? modal : modal.type;
   const [busy, setBusy] = useState(false),
@@ -19,7 +25,13 @@ export default function WorkspaceModal({ modal, close, catalog, onCreated, dirty
     setBusy(true);
     setError('');
     const data = Object.fromEntries(new FormData(e.currentTarget));
-    if (type === 'sheet') data.dialer_ids = selected;
+    if (type === 'sheet') {
+      if (data.last_slot) {
+        data.end = addMinutesToTime(data.last_slot, 30);
+        delete data.last_slot;
+      }
+      data.dialer_ids = selected;
+    }
     try {
       const result = await send(
         type === 'sheet' ? '/sheets' : type === 'campaign' ? '/campaigns' : '/dialers',
@@ -101,15 +113,30 @@ export default function WorkspaceModal({ modal, close, catalog, onCreated, dirty
             </div>
             <div className="form-row">
               <label>
-                Shift starts
-                <input type="time" name="start" defaultValue="18:30" step="1800" required />
+                First column (Start time)
+                <select name="start" defaultValue={DEFAULT_SHIFT_START} required>
+                  {HALF_HOUR_TIMES.map((t) => (
+                    <option key={t} value={t}>
+                      {clockLabel(t)}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
-                Shift ends
-                <input type="time" name="end" defaultValue="04:30" step="1800" required />
+                Last column (End time)
+                <select name="last_slot" defaultValue={DEFAULT_SHIFT_LAST_SLOT} required>
+                  {HALF_HOUR_TIMES.map((t) => (
+                    <option key={t} value={t}>
+                      {clockLabel(t)}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
-            <p className="field-hint">An earlier end time continues into the next day.</p>
+            <p className="field-hint">
+              Default is 6:30 PM to 5:00 AM. You can also adjust the time range later directly from
+              the report.
+            </p>
             <div className="dialer-select-title">
               <b>
                 Include dialers <span className="count-chip">{selected.length}</span>

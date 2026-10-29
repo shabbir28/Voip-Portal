@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import pg from 'pg';
+import { makeSlots } from '../shared/reporting.js';
 export const pool = new pg.Pool({
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT || 5432),
@@ -93,4 +94,21 @@ export async function migrate(db = pool) {
       END IF;
     END $$;
   `);
+  const slotMig = await db.query(
+    "SELECT 1 FROM voip.schema_migrations WHERE name='default-slots-630pm-500am-v1'",
+  );
+  if (!slotMig.rowCount) {
+    const updatedSlots = makeSlots('18:30', '05:30');
+    await db.query(
+      `UPDATE voip.sheets
+       SET config = jsonb_set(config, '{slots}', $1::jsonb)
+       WHERE jsonb_array_length(config->'slots') = 20
+         AND config->'slots'->0->>'start' = '18:30'
+         AND config->'slots'->19->>'end' = '04:30'`,
+      [JSON.stringify(updatedSlots)],
+    );
+    await db.query(
+      "INSERT INTO voip.schema_migrations(name) VALUES('default-slots-630pm-500am-v1') ON CONFLICT DO NOTHING",
+    );
+  }
 }

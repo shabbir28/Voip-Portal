@@ -45,6 +45,7 @@ import DailyReportPage from '../pages/DailyReportPage.jsx';
 import OverviewPage from '../pages/OverviewPage.jsx';
 import DialersPage from '../pages/DialersPage.jsx';
 import DateRangePicker from '../components/DateRangePicker.jsx';
+import TimeRangePicker from '../components/TimeRangePicker.jsx';
 import AddReportDialerModal from '../components/AddReportDialerModal.jsx';
 import { getDatePresets } from '../utils/dateRanges.js';
 import { withDraft } from '../utils/reports.js';
@@ -157,6 +158,46 @@ export default function App() {
       await rowChanged('restore', dialerId);
     } catch (e) {
       fail(e);
+    } finally {
+      setSaving(false);
+    }
+  }
+  async function updateSheetTimeRange(start, end) {
+    if (!sheet) return;
+    setSaving(true);
+    try {
+      const oldSlots = sheet.config.slots || [];
+      const res = await send(
+        `/sheets/${sheet.id}/time-range`,
+        { version: sheet.version, start, end },
+        'PATCH',
+      );
+      if (dirty && res.slots) {
+        const newIndexByStart = new Map(res.slots.map((s, idx) => [s.start, idx]));
+        setDraft((current) => {
+          const next = {};
+          for (const [key, val] of Object.entries(current)) {
+            const [dialerId, oldIdx] = key.split(':').map(Number);
+            const slotStart = oldSlots[oldIdx]?.start;
+            const newIdx = slotStart ? newIndexByStart.get(slotStart) : undefined;
+            if (newIdx !== undefined) {
+              next[`${dialerId}:${newIdx}`] = val;
+            }
+          }
+          return next;
+        });
+      }
+      await loadSheet(sheet.id, true);
+      await refreshSheets();
+      const firstLabel = clockLabel(res.slots?.[0]?.start || start);
+      const lastLabel = clockLabel(res.slots?.at(-1)?.start || end);
+      setNotice({
+        type: 'success',
+        message: `Report time range updated to ${firstLabel} – ${lastLabel}.`,
+      });
+    } catch (e) {
+      fail(e);
+      throw e;
     } finally {
       setSaving(false);
     }
@@ -682,12 +723,12 @@ export default function App() {
               </div>
               <div className="report-toolbar-right">
                 {sheet && page === 'sheets' && (
-                  <span className="muted shift-label">
-                    <Clock3 size={14} />
-                    {clockLabel(sheet.config.slots[0].start)} –{' '}
-                    {clockLabel(sheet.config.slots.at(-1).end)} ·{' '}
-                    {timezoneAbbreviation(new Date(`${sheet.report_date}T12:00:00Z`))}
-                  </span>
+                  <TimeRangePicker
+                    slots={sheet.config.slots}
+                    timezoneAbbr={timezoneAbbreviation(new Date(`${sheet.report_date}T12:00:00Z`))}
+                    disabled={saving || loading}
+                    onApply={updateSheetTimeRange}
+                  />
                 )}
                 <button
                   className="icon-btn"

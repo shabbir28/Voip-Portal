@@ -505,6 +505,133 @@ main {
   background: #7050d2;
   justify-content: center;
 }
+.time-range-picker {
+  position: relative;
+  z-index: 25;
+}
+.time-range-trigger {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #f6f8fc;
+  color: #34445c;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-variant-numeric: tabular-nums;
+}
+.time-range-trigger:hover,
+.time-range-trigger.is-open {
+  background: #eef2ff;
+  border-color: #818cf8;
+  color: #3730a3;
+}
+.time-range-trigger > svg:first-child {
+  color: #6366f1;
+}
+.time-range-trigger.is-open > svg:last-child {
+  transform: rotate(180deg);
+}
+.time-range-menu {
+  position: absolute;
+  top: 41px;
+  right: 0;
+  width: 340px;
+  max-width: calc(100vw - 40px);
+  background: #101a2a;
+  border: 1px solid #31415b;
+  padding: 7px;
+  border-radius: 12px;
+  box-shadow: 0 12px 35px #0d172d35;
+  color: #d2dbea;
+}
+.time-presets > button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  background: none;
+  border: 0;
+  border-radius: 7px;
+  padding: 9px 10px;
+  color: #c9d7ed;
+  font-size: 11.5px;
+  gap: 8px;
+  cursor: pointer;
+}
+.time-presets > button:hover {
+  background: #1b2a40;
+}
+.time-presets > button.chosen {
+  background: #393122;
+  color: #f4c75d;
+}
+.time-presets > button small {
+  margin-left: auto;
+  font-size: 9px;
+  color: #7d93b2;
+  font-variant-numeric: tabular-nums;
+}
+.custom-time-range {
+  margin: 8px 4px 4px;
+  padding: 12px 6px 4px;
+  border-top: 1px solid #2d3b52;
+}
+.custom-time-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #899cb9;
+  margin-bottom: 10px;
+}
+.time-select-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.time-select-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #b5c2d7;
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+.time-select-row select {
+  font-size: 11px;
+  padding: 6px 8px;
+  height: 34px;
+  border-radius: 6px;
+  color-scheme: dark;
+  background: #1b293e;
+  color: #d3dced;
+  border: 1px solid #35455f;
+  outline: none;
+}
+.time-select-row select:focus {
+  border-color: #818cf8;
+}
+.time-range-summary {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.time-range-summary b {
+  color: #f8fafc;
+}
+.time-apply-btn {
+  color: #fff;
+  width: 100%;
+  background: #7050d2;
+  justify-content: center;
+}
 .range-error {
   font-size: 10px;
   line-height: 1.6;

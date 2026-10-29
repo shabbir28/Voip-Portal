@@ -1,4 +1,19 @@
-export function makeSlots(start = '18:30', end = '04:30') {
+export const DEFAULT_SHIFT_START = '18:30';
+export const DEFAULT_SHIFT_LAST_SLOT = '05:00';
+export const DEFAULT_SHIFT_END = '05:30';
+
+export function addMinutesToTime(timeStr, mins = 30) {
+  const total =
+    (Number(timeStr.slice(0, 2)) * 60 + Number(timeStr.slice(3)) + mins + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+export const HALF_HOUR_TIMES = Array.from({ length: 48 }, (_, i) => {
+  const m = i * 30;
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+});
+
+export function makeSlots(start = DEFAULT_SHIFT_START, end = DEFAULT_SHIFT_END) {
   const minutes = (x) => Number(x.slice(0, 2)) * 60 + Number(x.slice(3));
   const from = minutes(start);
   let to = minutes(end);

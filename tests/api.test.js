@@ -331,6 +331,16 @@ test('PostgreSQL authentication, reporting, validation and concurrent edits', as
         assert.equal(report.summary.total, 0);
         assert.equal(report.activity[0].action, 'Row entries cleared');
         assert.equal(report.activity[0].detail.changes[0].previous, 15.25);
+
+        const trRes = await mutate('patch', `/api/sheets/${sheetId}/time-range`, {
+          version: report.version,
+          start: '18:30',
+          end: '05:30',
+        });
+        assert.equal(trRes.status, 200);
+        assert.equal(trRes.body.slots.length, 22);
+        assert.equal(trRes.body.slots[0].start, '18:30');
+        assert.equal(trRes.body.slots.at(-1).start, '05:00');
       },
     );
     await t.test('catalog edits and recoverable deletes preserve existing reports', async () => {

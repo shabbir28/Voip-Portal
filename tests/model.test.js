@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeSlots, summarize } from '../server/model.js';
-test('night shift has 20 half-hour slots and rolls over midnight', () => {
+test('night shift has 22 half-hour slots (6:30 PM to 5:00 AM) and rolls over midnight', () => {
   const slots = makeSlots();
-  assert.equal(slots.length, 20);
+  assert.equal(slots.length, 22);
   assert.deepEqual(slots[11], { start: '00:00', end: '00:30', dayOffset: 1 });
-  assert.equal(slots.at(-1).end, '04:30');
+  assert.equal(slots.at(-1).start, '05:00');
+  assert.equal(slots.at(-1).end, '05:30');
 });
 test('totals preserve cents, zero counts as recorded, blank does not', () => {
   const config = { slots: makeSlots('18:30', '19:30'), dialers: [{ id: 1 }, { id: 2 }] };

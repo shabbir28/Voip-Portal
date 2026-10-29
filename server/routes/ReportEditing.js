@@ -1,6 +1,124 @@
 import { z } from 'zod';
-import { id, text } from '../validation/schemas.js';
+import { id, text, time } from '../validation/schemas.js';
+import { makeSlots } from '../../shared/reporting.js';
+import { REPORT_TIMEZONE } from '../../shared/time.js';
 export function registerReportEditing(app, db) {
+  app.patch('/api/sheets/:id/time-range', async (req, res) => {
+    const sheetId = id.parse(req.params.id);
+    const data = z
+      .object({
+        version: z.number().int().nonnegative(),
+        start: time,
+        end: time,
+      })
+      .parse(req.body);
+    const newSlots = makeSlots(data.start, data.end);
+    if (newSlots.length < 1 || newSlots.length > 48) {
+      return res
+        .status(400)
+        .json({ error: 'Invalid time range. Choose between 1 and 48 half-hour intervals.' });
+    }
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      const allowSuper = req.user.role === 'super_admin';
+      const sheet = (
+        await client.query(
+          'SELECT * FROM voip.sheets WHERE id=$1 AND (created_by=$2 OR $3) FOR UPDATE',
+          [sheetId, req.user.id, allowSuper],
+        )
+      ).rows[0];
+      const reject = async (status, error) => {
+        await client.query('ROLLBACK');
+        return res.status(status).json({ error });
+      };
+      if (!sheet) return await reject(404, 'Report not found.');
+      if (sheet.version !== data.version)
+        return await reject(409, 'Report changed. Reload before updating the time range.');
+
+      const oldSlots = sheet.config.slots || [];
+      const currentEntries = (
+        await client.query('SELECT dialer_id,slot,amount FROM voip.entries WHERE sheet_id=$1', [
+          sheetId,
+        ])
+      ).rows;
+
+      const knownByTime = new Map(Object.entries(sheet.config.hiddenSlotEntries || {}));
+      for (const e of currentEntries) {
+        const slotStart = oldSlots[e.slot]?.start;
+        if (slotStart) {
+          knownByTime.set(`${e.dialer_id}:${slotStart}`, e.amount);
+        }
+      }
+
+      const newSlotIndexByStart = new Map(newSlots.map((s, idx) => [s.start, idx]));
+      const nextHidden = {};
+
+      await client.query('DELETE FROM voip.entries WHERE sheet_id=$1', [sheetId]);
+      for (const [key, amount] of knownByTime.entries()) {
+        const sep = key.indexOf(':');
+        const dialerId = Number(key.slice(0, sep));
+        const slotStart = key.slice(sep + 1);
+        const newIdx = newSlotIndexByStart.get(slotStart);
+        if (newIdx !== undefined) {
+          await client.query(
+            'INSERT INTO voip.entries(sheet_id,dialer_id,slot,amount) VALUES($1,$2,$3,$4)',
+            [sheetId, dialerId, newIdx, amount],
+          );
+        } else {
+          nextHidden[key] = amount;
+        }
+      }
+
+      if (Array.isArray(sheet.config.removedDialers)) {
+        sheet.config.removedDialers = sheet.config.removedDialers.map((item) => {
+          const remapped = [];
+          for (const e of item.entries || []) {
+            const slotStart = e.slotStart || oldSlots[e.slot]?.start;
+            const newIdx = slotStart ? newSlotIndexByStart.get(slotStart) : undefined;
+            if (newIdx !== undefined) {
+              remapped.push({ ...e, slot: newIdx, slotStart });
+            }
+          }
+          return { ...item, entries: remapped };
+        });
+      }
+
+      sheet.config.slots = newSlots;
+      sheet.config.timezone = REPORT_TIMEZONE;
+      if (Object.keys(nextHidden).length > 0) {
+        sheet.config.hiddenSlotEntries = nextHidden;
+      } else {
+        delete sheet.config.hiddenSlotEntries;
+      }
+
+      await client.query(
+        'UPDATE voip.sheets SET config=$1,version=version+1,updated_at=now() WHERE id=$2',
+        [JSON.stringify(sheet.config), sheetId],
+      );
+      await client.query(
+        'INSERT INTO voip.audit(sheet_id,user_id,action,detail) VALUES($1,$2,$3,$4)',
+        [
+          sheetId,
+          req.user.id,
+          'Time range updated',
+          JSON.stringify({
+            start: newSlots[0].start,
+            lastSlot: newSlots.at(-1).start,
+            end: newSlots.at(-1).end,
+            slots: newSlots.length,
+          }),
+        ],
+      );
+      await client.query('COMMIT');
+      res.json({ version: sheet.version + 1, slots: newSlots });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  });
   app.patch('/api/sheets/:id/dialers/:dialerId', async (req, res) => {
     const sheetId = id.parse(req.params.id),
       dialerId = id.parse(req.params.dialerId);
