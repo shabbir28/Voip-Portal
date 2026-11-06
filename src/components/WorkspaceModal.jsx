@@ -82,6 +82,7 @@ export default function WorkspaceModal({ modal, close, catalog, onCreated, dirty
     );
   return (
     <Modal
+      className={type === 'sheet' ? 'daily-report-modal' : ''}
       title={
         type === 'sheet' ? 'New daily report' : type === 'campaign' ? 'New campaign' : 'New dialer'
       }
@@ -156,27 +157,65 @@ export default function WorkspaceModal({ modal, close, catalog, onCreated, dirty
               </button>
             </div>
             <div className="dialer-picker">
-              {catalog.campaigns.map((c) => (
-                <div key={c.id}>
-                  <b>{c.name}</b>
-                  {catalog.dialers
-                    .filter((d) => d.campaign_id === c.id)
-                    .map((d) => (
-                      <label className="checkbox-label" key={d.id}>
-                        <input
-                          type="checkbox"
-                          checked={selected.includes(d.id)}
-                          onChange={(e) =>
-                            setSelected((prev) =>
-                              e.target.checked ? [...prev, d.id] : prev.filter((id) => id !== d.id),
-                            )
-                          }
-                        />
-                        {d.name}
-                      </label>
-                    ))}
-                </div>
-              ))}
+              {catalog.campaigns.map((c) => {
+                const dialers = catalog.dialers.filter((d) => d.campaign_id === c.id);
+                const campaignIds = new Set(dialers.map((d) => d.id));
+                const selectedCount = dialers.filter((d) => selected.includes(d.id)).length;
+                return (
+                  <div className="campaign-picker-row" key={c.id}>
+                    <label className="checkbox-label campaign-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={dialers.length > 0 && selectedCount === dialers.length}
+                        disabled={!dialers.length}
+                        ref={(input) => {
+                          if (input)
+                            input.indeterminate =
+                              selectedCount > 0 && selectedCount < dialers.length;
+                        }}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setSelected((prev) =>
+                            checked
+                              ? [...new Set([...prev, ...campaignIds])]
+                              : prev.filter((id) => !campaignIds.has(id)),
+                          );
+                        }}
+                      />
+                      <span className="campaign-picker-heading">
+                        <b>{c.name}</b>
+                        <span
+                          className="campaign-picker-count"
+                          title={`${selectedCount} of ${dialers.length} dialers selected`}
+                        >
+                          {selectedCount}/{dialers.length}
+                        </span>
+                      </span>
+                    </label>
+                    <div className="campaign-picker-dialers">
+                      {dialers.map((d) => (
+                        <label
+                          className={`checkbox-label dialer-choice${selected.includes(d.id) ? ' is-selected' : ''}`}
+                          key={d.id}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(d.id)}
+                            onChange={(e) =>
+                              setSelected((prev) =>
+                                e.target.checked
+                                  ? [...prev, d.id]
+                                  : prev.filter((id) => id !== d.id),
+                              )
+                            }
+                          />
+                          <span>{d.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </>
         ) : (

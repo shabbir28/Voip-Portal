@@ -1774,11 +1774,81 @@ form input[readonly] {
   border-radius: 8px;
   background: #fafbfe;
 }
-.dialer-picker > div > b {
-  font-size: 10px;
-  color: #9b8dbb;
-  display: block;
-  margin: 5px 0 10px;
+.dialer-picker .campaign-checkbox {
+  font-size: 11px;
+  color: #44526a;
+  margin: 0;
+  flex: 0 0 118px;
+  align-self: flex-start;
+  overflow-wrap: anywhere;
+}
+.campaign-picker-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+.campaign-picker-count {
+  color: #7b879d;
+  font-size: 9px;
+  font-weight: 400;
+  background: #edf0f7;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.campaign-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e0e5ef;
+  border-radius: 8px;
+  background: #fff;
+}
+.campaign-picker-row + .campaign-picker-row {
+  margin-top: 6px;
+}
+.campaign-picker-dialers {
+  display: flex;
+  flex: 1 1 240px;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+.dialer-picker .checkbox-label {
+  margin-bottom: 0;
+  min-height: 24px;
+  cursor: pointer;
+}
+.campaign-picker-dialers .checkbox-label {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 4px 6px;
+  border: 1px solid #e1e6ef;
+  border-radius: 6px;
+  background: #f8faff;
+  line-height: 1.4;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+.campaign-picker-dialers .dialer-choice:hover {
+  border-color: #b8a4ed;
+  background: #f4f0ff;
+}
+.campaign-picker-dialers .dialer-choice.is-selected {
+  background: #f0eaff;
+  border-color: #c9b8f2;
+  color: #6441ad;
+}
+.dialer-picker .checkbox-label:focus-within {
+  outline: 2px solid #8963de;
+  outline-offset: 3px;
+}
+.modal form .dialer-picker input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
 }
 .checkbox-label {
   display: flex;

@@ -1269,11 +1269,49 @@ main {
   color: #64748d;
 }
 .dialer-picker {
-  background: #eaf0f7;
-  border-color: #d1dbe8;
+  background: #f0f3f9;
+  border-color: #dce3ee;
+  padding: 7px;
+  max-height: 240px;
+  scrollbar-width: thin;
+  scrollbar-color: #c4cbd9 transparent;
 }
 .modal-actions {
   border-color: #d6deeb;
+}
+.modal.daily-report-modal {
+  padding: 20px 24px;
+}
+.daily-report-modal > p {
+  margin-top: 4px;
+}
+.daily-report-modal form {
+  margin-top: 14px;
+}
+.daily-report-modal form > label,
+.daily-report-modal .form-row > label {
+  gap: 5px;
+  margin-bottom: 11px;
+}
+.daily-report-modal form > label > input,
+.daily-report-modal .form-row input,
+.daily-report-modal .form-row select {
+  height: 32px;
+  padding: 6px 10px;
+}
+.daily-report-modal .field-hint {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+.daily-report-modal .dialer-select-title {
+  margin: 10px 0 7px;
+}
+.daily-report-modal .dialer-picker {
+  max-height: 190px;
+}
+.daily-report-modal .modal-actions {
+  margin-top: 14px;
+  padding-top: 12px;
 }
 .activity-item {
   padding: 15px 17px;
