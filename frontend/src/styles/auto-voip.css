@@ -1,0 +1,562 @@
+/* Auto VoIP uses the existing workspace shell with its own ledger styles. */
+main.auto-voip-page {
+  --auto-ink: #202a34;
+  --auto-secondary: #475565;
+  --auto-muted: #566474;
+  --auto-line: #dbe2e9;
+  --auto-paper: #fff;
+  --auto-wash: #f4f6f8;
+  --auto-teal: #17695c;
+  --auto-teal-wash: #eaf5f1;
+  --auto-warning: #87551e;
+  --auto-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  max-width: 1600px;
+  min-width: 0;
+  padding: 28px 24px 0;
+  color: var(--auto-ink);
+}
+
+.auto-voip-page .page-heading {
+  margin-bottom: 20px;
+}
+
+.auto-voip-page .page-heading h1 {
+  color: var(--auto-ink);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.auto-voip-page .page-heading p {
+  margin-top: 4px;
+  color: var(--auto-secondary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.auto-voip-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  font-size: 13px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.auto-voip-workspace :is(button, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--auto-teal);
+  outline-offset: 2px;
+}
+
+.auto-voip-workspace button {
+  transition:
+    background-color 150ms var(--auto-ease),
+    border-color 150ms var(--auto-ease);
+}
+
+.auto-voip-workspace svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  stroke-width: 1.5;
+}
+
+.auto-voip-sync,
+.auto-voip-sheet,
+.auto-voip-empty {
+  background: var(--auto-paper);
+  border: 1px solid var(--auto-line);
+  border-radius: 12px;
+}
+
+.auto-voip-sync {
+  display: grid;
+  grid-template-columns: minmax(208px, 0.9fr) minmax(0, 2fr);
+}
+
+.auto-voip-source,
+.auto-voip-sync-detail {
+  padding: 16px 20px;
+}
+
+.auto-voip-source {
+  border-right: 1px solid var(--auto-line);
+}
+
+.auto-voip-source-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-weight: 600;
+}
+
+.auto-voip-source-name span,
+.auto-voip-meta {
+  color: var(--auto-muted);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+}
+
+.auto-voip-balance {
+  margin: 8px 0 4px;
+  font-size: 36px;
+  line-height: 40px;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.auto-voip-sync-detail {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+}
+
+.auto-voip-sync-message {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.auto-voip-sync-message p {
+  color: var(--auto-secondary);
+  overflow-wrap: anywhere;
+}
+
+.auto-voip-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--auto-secondary);
+  font-weight: 600;
+}
+
+.auto-voip-state[data-tone='active'] {
+  color: var(--auto-teal);
+}
+
+.auto-voip-state[data-tone='warning'] {
+  color: var(--auto-warning);
+}
+
+.auto-voip-state > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.auto-voip-sync-times {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--auto-line);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.auto-voip-sync-times dt,
+.auto-voip-report-total > span {
+  display: block;
+  color: var(--auto-muted);
+  font-size: 12px;
+}
+
+.auto-voip-sync-times dd {
+  margin: 0;
+  color: var(--auto-ink);
+  font-weight: 500;
+}
+
+.auto-voip-toolbar,
+.auto-voip-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.auto-voip-toolbar {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  container-type: inline-size;
+}
+
+.auto-voip-workspace .date-trigger,
+.auto-voip-report-select select,
+.auto-voip-button {
+  height: 40px;
+  border: 1px solid var(--auto-line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--auto-paper);
+  color: var(--auto-ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.auto-voip-workspace .date-trigger {
+  min-width: 112px;
+}
+
+.auto-voip-workspace .date-trigger:hover,
+.auto-voip-workspace .date-trigger.is-open,
+.auto-voip-button:hover:not(:disabled) {
+  background: var(--auto-wash);
+  border-color: #bbc8d3;
+}
+
+.auto-voip-refresh {
+  width: 40px;
+  padding: 0;
+}
+
+.auto-voip-report-select {
+  position: relative;
+  min-width: 0;
+}
+
+.auto-voip-report-select select {
+  appearance: none;
+  max-width: 100%;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.auto-voip-report-select svg {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  pointer-events: none;
+  color: var(--auto-secondary);
+}
+
+.auto-voip-workspace .date-menu {
+  top: calc(100% + 8px);
+  width: 344px;
+  max-width: 100cqw;
+  padding: 8px;
+  border-color: var(--auto-line);
+  background: var(--auto-paper);
+  color: var(--auto-ink);
+  box-shadow: 0 8px 24px rgb(32 42 52 / 10%);
+}
+
+.auto-voip-workspace .date-menu-title,
+.auto-voip-workspace .date-menu-title span,
+.auto-voip-workspace .date-menu > button small {
+  color: var(--auto-muted);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.auto-voip-workspace .date-menu-title {
+  padding: 8px;
+  text-transform: lowercase;
+}
+
+.auto-voip-workspace .date-menu-title span {
+  text-transform: none;
+}
+
+.auto-voip-workspace .date-menu > button {
+  color: var(--auto-ink);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.auto-voip-workspace .date-menu > button:hover {
+  background: var(--auto-wash);
+}
+
+.auto-voip-workspace .date-menu > button.chosen {
+  background: var(--auto-teal-wash);
+  color: var(--auto-teal);
+}
+
+.auto-voip-workspace .custom-range {
+  padding: 12px 0 0;
+  border-color: var(--auto-line);
+}
+
+.auto-voip-workspace .custom-range label {
+  color: var(--auto-secondary);
+  font-size: 12px;
+}
+
+.auto-voip-workspace .custom-range input {
+  font-size: 12px;
+  color: var(--auto-ink);
+  color-scheme: light;
+  border-color: var(--auto-line);
+  background: var(--auto-paper);
+}
+
+.auto-voip-workspace .custom-range .primary,
+.auto-voip-workspace .custom-range .primary:hover {
+  background: var(--auto-teal);
+  color: #fff;
+}
+
+.auto-voip-sheet {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.auto-voip-sheet-heading,
+.auto-voip-grid-bar,
+.auto-voip-sheet-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 20px;
+}
+
+.auto-voip-sheet-heading {
+  padding-block: 16px;
+}
+
+.auto-voip-sheet-heading h2,
+.auto-voip-empty h2 {
+  margin-bottom: 4px;
+  color: var(--auto-ink);
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.auto-voip-report-total {
+  flex: none;
+  text-align: right;
+}
+
+.auto-voip-report-total strong {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+.auto-voip-grid-bar {
+  min-height: 44px;
+  padding-block: 4px;
+  border-top: 1px solid var(--auto-line);
+  color: var(--auto-ink);
+  font-weight: 500;
+}
+
+.auto-voip-grid-bar span {
+  color: var(--auto-muted);
+  font-weight: 400;
+}
+
+.auto-voip-jump {
+  flex: none;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--auto-teal);
+  font-weight: 600;
+}
+
+.auto-voip-jump:hover {
+  background: var(--auto-teal-wash);
+}
+
+.auto-voip-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border-block: 1px solid var(--auto-line);
+  scrollbar-color: #aebbc8 var(--auto-wash);
+}
+
+.auto-voip-scroll:focus-visible {
+  outline-offset: -2px;
+}
+
+.auto-voip-table {
+  --dialer-column: 188px;
+  --total-column: 104px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  width: calc(var(--dialer-column) + var(--total-column) + 80px * var(--interval-columns));
+}
+
+.auto-voip-dialer-column {
+  width: var(--dialer-column);
+}
+
+.auto-voip-total-column {
+  width: var(--total-column);
+}
+
+.auto-voip-table :is(th, td) {
+  padding: 8px;
+  height: 36px;
+  border-bottom: 1px solid var(--auto-line);
+  border-right: 1px solid var(--auto-line);
+  text-align: right;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.auto-voip-table tr > th:first-child {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  padding-left: 16px;
+  background: var(--auto-paper);
+  font-weight: 500;
+}
+
+.auto-voip-table tr:not(.auto-voip-campaign-row) > :last-child {
+  position: sticky;
+  right: 0;
+  border-right: 0;
+  border-left: 1px solid var(--auto-line);
+  padding-right: 16px;
+  background: var(--auto-wash);
+  font-weight: 600;
+}
+
+.auto-voip-table thead th,
+.auto-voip-table thead th:first-child,
+.auto-voip-table .auto-voip-campaign-row > * {
+  background: var(--auto-wash);
+  color: var(--auto-secondary);
+  font-weight: 500;
+}
+
+.auto-voip-table thead small {
+  display: block;
+  color: inherit;
+  font-size: 11px;
+}
+
+.auto-voip-table .auto-voip-billed-row > * {
+  background: var(--auto-teal-wash);
+}
+
+.auto-voip-table .auto-voip-billed-row th:first-child {
+  background: var(--auto-teal-wash);
+  color: var(--auto-teal);
+}
+
+.auto-voip-billed-row small {
+  display: block;
+  color: var(--auto-muted);
+}
+
+.auto-voip-table .auto-voip-campaign-row th:first-child {
+  background: var(--auto-wash);
+  font-weight: 600;
+  border-right: 0;
+}
+
+.auto-voip-table thead .auto-voip-latest {
+  background: var(--auto-teal);
+  color: #fff;
+}
+
+.auto-voip-table .auto-voip-dialer-row .auto-voip-latest {
+  background: var(--auto-teal-wash);
+  color: var(--auto-teal);
+  font-weight: 600;
+}
+
+.auto-voip-table .auto-voip-unreported {
+  color: var(--auto-muted);
+}
+
+.auto-voip-table .auto-voip-running-row > *,
+.auto-voip-table .auto-voip-running-row > th:first-child {
+  background: var(--auto-wash);
+}
+
+.auto-voip-table tfoot > tr:first-child > * {
+  border-top: 1px solid #bbc8d3;
+}
+
+.auto-voip-table tfoot > tr:last-child > * {
+  border-bottom: 0;
+}
+
+.auto-voip-sheet-footer {
+  flex-wrap: wrap;
+  color: var(--auto-muted);
+  font-size: 12px;
+}
+
+.auto-voip-empty {
+  padding: 24px 20px;
+  color: var(--auto-secondary);
+}
+
+.auto-voip-error {
+  padding: 12px 16px;
+  border: 1px solid #e6d7c6;
+  border-radius: 8px;
+  color: var(--auto-warning);
+  background: #fffaf4;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .auto-voip-sync {
+    grid-template-columns: 1fr;
+  }
+
+  .auto-voip-source {
+    border-right: 0;
+    border-bottom: 1px solid var(--auto-line);
+  }
+}
+
+@media (max-width: 540px) {
+  main.auto-voip-page {
+    padding: 20px 16px 0;
+  }
+
+  .auto-voip-page .page-heading h1 {
+    font-size: 28px;
+  }
+
+  .auto-voip-source,
+  .auto-voip-sync-detail,
+  .auto-voip-sheet-heading,
+  .auto-voip-grid-bar,
+  .auto-voip-sheet-footer {
+    padding-inline: 12px;
+  }
+
+  .auto-voip-grid-bar {
+    gap: 4px;
+  }
+
+  .auto-voip-grid-bar span {
+    display: block;
+  }
+
+  .auto-voip-table {
+    --dialer-column: 124px;
+    --total-column: 76px;
+  }
+
+  .auto-voip-table tr > th:first-child {
+    padding-left: 8px;
+  }
+
+  .auto-voip-table tr:not(.auto-voip-campaign-row) > :last-child {
+    padding-right: 8px;
+  }
+}

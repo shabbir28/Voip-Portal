@@ -1,0 +1,17 @@
+import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+export default defineConfig({
+  plugins: [react()],
+  build: { rollupOptions: { output: { manualChunks: { charts: ['recharts'], dates: ['luxon'] } } } },
+  server: {
+    port: 5173,
+    strictPort: true,
+    proxy: { '/api': 'http://127.0.0.1:3001' },
+    fs: {
+      allow: ['./', '../shared/', '../node_modules/'].map((directory) =>
+        fileURLToPath(new URL(directory, import.meta.url)),
+      ),
+    },
+  },
+});

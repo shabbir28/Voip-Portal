@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import { todayInZone } from '../shared/time.js';
-import { migrate } from '../server/db.js';
+import { migrate } from '../backend/db.js';
 export async function verifyRoles(t, app, superAgent, mutate, db) {
   const admin = request.agent(app),
     day = todayInZone();

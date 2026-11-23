@@ -6,17 +6,17 @@ React + Node.js/Express + PostgreSQL workspace for Balitech’s manual VoIP repo
 
 Node.js 20.19+ (or 22.12+) and PostgreSQL are required.
 
-1. Copy `.env.example` to `.env` if `.env` does not already exist.
+1. Copy `backend/.env.example` to `backend/.env` if you do not already have a `.env` file.
 2. Set your PostgreSQL credentials. The existing database name is **Voip_portal** (case sensitive).
 3. Run `npm install`, then `npm run dev`.
 4. Open http://127.0.0.1:5173 and create your administrator account.
 
-The backend adds its own `voip` schema inside the existing database. It does not replace any existing tables. The database itself must already exist. Credentials stay in `.env`, which is excluded from Git.
+The backend adds its own `voip` schema inside the existing database. It does not replace any existing tables. The database itself must already exist. Git ignores `.env` files. Existing deployments can continue using a `.env` at the repository root.
 
 ## Daily workflow
 
 - Create a report with a start date, shift times and selected dialers.
-- The default night shift is 6:30 PM–4:30 AM, in US Eastern (America/New_York), with 20 half-hour slots. EST/EDT adjusts automatically. Existing Asia/Karachi reports display converted Eastern dates and time slots without changing their original saved data.
+- The default night shift is 6:30 PM–5:30 AM in US Eastern (America/New_York), with 22 half-hour slots. The last column, 5:00 AM, covers 5:00–5:30 AM. EST/EDT adjusts automatically. Existing Asia/Karachi reports display converted Eastern dates and time slots without changing their original saved data.
 - Enter **interval spend in USD**, not a cumulative meter reading. Enter `0` for confirmed zero spend; leave unreported intervals blank.
 - Row totals, campaign totals and running totals update immediately as you type. Click **Save changes** to persist them and refresh the overview and audit log.
 - Changing or clearing a value is recorded in the audit trail.
@@ -32,7 +32,17 @@ The backend adds its own `voip` schema inside the existing database. It does not
 
 Initial campaign and named dialer structure follows the reference Google Sheet. Blank rows and duplicate placeholder “ACA” rows are omitted. Original financial values are **not imported**: source totals, dates, and final time-slot labels are inconsistent. The portal separates totals from the 20 actual intervals and calculates all totals from saved entries.
 
-This is a manual reporting portal. It does not fetch dialer APIs or synchronize Google Sheets.
+Daily reports continue to use manual entries. The separate **Auto VoIP** module collects Go Connectivo spend without changing manual reports, their totals or their audit history.
+
+## Go Connectivo billing sync
+
+Configure the `CONNECTIVO_*` values from `backend/.env.example` in your server environment, `backend/.env`, or an ignored `backend/.env.connectivo` file. Use the user ID of the account that should view automatic reports. Keep the vendor password in that file or the server's secret store. Run `npm run connectivo:check` to verify billing access, then `npm run connectivo:sample` to save an immediate live baseline in the new module. Enable `CONNECTIVO_SYNC_ENABLED=true` and restart the backend.
+
+Open **Auto VoIP** in the sidebar using the configured account. It reads **Billing & Payments → Billed** every half-hour from **5:00 PM to 7:00 AM Pakistan time**. Each report has 28 half-hour columns and uses the date the shift began. The grid shows Pakistan time with its corresponding US Eastern time below it. The date picker follows the same Today rule as Daily Reports.
+
+The backend reads the vendor dialer just after `:00` and `:30`, retrying temporary failures for up to two minutes. **Vendor billed at start** shows the cumulative reading, for example $116 at 11:30 PM and $130 at midnight. The 11:30 PM interval then records $14, and the running total adds that $14. The 7:00 AM reading closes the last interval. Missing readings and unexpected counter decreases leave gaps. Confirmed zero spend is recorded as $0.00. Saved readings are deduplicated and automatic reports are visible only to the configured owner.
+
+Keep the backend process running continuously with network access. Closing it or shutting down the computer stops collection; the chat itself is not a scheduler. For unattended use, run the application on an always-on server under a process manager. The module refreshes its display every 30 seconds, while vendor collection remains every 30 minutes.
 
 ## Vendor reporting
 
@@ -48,8 +58,10 @@ This is a manual reporting portal. It does not fetch dialer APIs or synchronize 
 
 ```text
 npm run dev      React on 5173; API on 3001
-npm run build    Production frontend
+npm run build    Build the production frontend into frontend/dist
 npm start        Serve frontend + API on 3001 after a build
+npm run connectivo:check   Check vendor login/billing without saving
+npm run connectivo:sample  Save a live baseline in Auto VoIP only
 npm test         Unit tests and isolated PostgreSQL integration tests
 npm run format  Format source files
 npm run format:check  Check source formatting
@@ -60,22 +72,24 @@ Integration tests create and remove a uniquely named `voip_portal_test_<pid>` da
 ## Project structure
 
 ```text
-src/
-  app/          Application state, navigation and page composition
-  pages/        Login, overview, daily report, dialer directory, activity
-  components/   Date picker, modals, KPI cards and reusable controls
-  services/     API client
-  utils/        Date presets, draft calculations, aggregation and CSV export
-  styles/       Base styles and compact workspace theme
-server/
+frontend/
+  src/          React pages, components, styles and API client
+  public/       Branding and other static browser assets
+  vite.config.js
+backend/
   routes/       Authentication, catalog, reports and date-range endpoints
   validation/   Shared request schemas
   config/       Initial campaign and dialer definitions
   db.js         PostgreSQL connection and schema initialization
   app.js        Express middleware and route registration
+  index.js      API and production frontend entry point
+  scripts/      Database maintenance and isolated preview tools
+  .env.example  Local configuration template
 shared/         Currency totals and shift calculations used by client/server
 tests/          Unit and PostgreSQL integration coverage
 ```
+
+Run npm commands from the repository root. If a process manager uses the Node entry point directly, use `backend/index.js`. If your web server serves the built frontend directly, point it at `frontend/dist`.
 
 ## Security and hosting
 
@@ -89,6 +103,6 @@ Daily and vendor reports belong to their creator. Every account (including Super
 
 The supplied Go Connectivo logo appears on the login page and sidebar. Date filters initially select **Today**, calculated in America/New_York, and follow Eastern midnight when no unsaved entries are present. Existing report time slots continue to display in Eastern time. Admin provisioning credentials are stored under ignored `private/`; this folder is never served as a web asset.
 
-Finish first-run setup before exposing the server to other users. The app is bound to `127.0.0.1` by default. This release does not provide email invitations, password-reset email or live dialer integrations.
+Finish first-run setup before exposing the server to other users. The app is bound to `127.0.0.1` by default. This release does not provide email invitations or password-reset email. Go Connectivo billing collection is available through the separate Auto VoIP module.
 
 For hosting, use HTTPS, set `NODE_ENV=production`, configure `APP_ORIGIN` to your exact HTTPS URL, and set `HOST` for your deployment. Production cookies require HTTPS. Restrict access to PostgreSQL and back up the `Voip_portal` database. Google Fonts are optional; local sans-serif fallbacks render if the network is unavailable.

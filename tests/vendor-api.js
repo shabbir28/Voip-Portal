@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { migrate } from '../server/db.js';
+import { migrate } from '../backend/db.js';
 export async function verifyVendorApi(t, agent, mutate, db) {
   const vendors = (await agent.get('/api/vendors')).body;
   const vendor = vendors[0],

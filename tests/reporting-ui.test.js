@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getDatePresets } from '../src/utils/dateRanges.js';
-import { withDraft, aggregateReports } from '../src/utils/reports.js';
-import { reportsCsv, sheetCsv } from '../src/utils/download.js';
+import { getDatePresets } from '../frontend/src/utils/dateRanges.js';
+import { withDraft, aggregateReports } from '../frontend/src/utils/reports.js';
+import { reportsCsv, sheetCsv } from '../frontend/src/utils/download.js';
 import { makeSlots, summarize } from '../shared/reporting.js';
 test('date presets use Monday weeks and handle leap months and year boundaries', () => {
   const week = getDatePresets('2026-10-21').find((p) => p.label === 'This Week');

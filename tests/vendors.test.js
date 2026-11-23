@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { aggregateVendors, vendorSlots } from '../shared/vendors.js';
-import { vendorCsv } from '../src/utils/vendorDownload.js';
+import { vendorCsv } from '../frontend/src/utils/vendorDownload.js';
 const report = {
   report_date: '2026-10-20',
   name: 'Provider report',

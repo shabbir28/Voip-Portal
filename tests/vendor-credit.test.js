@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { vendorCredit } from '../shared/vendorCredit.js';
-import { negativeEntry, summarizeNegative } from '../server/routes/VendorNegative.js';
-import { vendorNegativeCsv } from '../src/utils/vendorNegativeDownload.js';
+import { negativeEntry, summarizeNegative } from '../backend/routes/VendorNegative.js';
+import { vendorNegativeCsv } from '../frontend/src/utils/vendorNegativeDownload.js';
 
 test('credit threshold includes 1000, zero and overdrafts but excludes unconfigured credit', () => {
   assert.equal(vendorCredit(null, 5000).lowCredit, false);

@@ -1,0 +1,276 @@
+import React, { useEffect, useState } from 'react';
+import { LoaderCircle, Plus, Save } from 'lucide-react';
+import Modal from './Modal.jsx';
+import { send } from '../services/api.js';
+import { today, clockLabel } from '../utils/format.js';
+import {
+  HALF_HOUR_TIMES,
+  addMinutesToTime,
+  DEFAULT_SHIFT_START,
+  DEFAULT_SHIFT_LAST_SLOT,
+} from '../../../shared/reporting.js';
+export default function WorkspaceModal({ modal, close, catalog, onCreated, dirty }) {
+  const type = typeof modal === 'string' ? modal : modal.type;
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState(''),
+    [selected, setSelected] = useState(catalog.dialers.map((d) => d.id));
+  async function submit(e) {
+    e.preventDefault();
+    if (
+      type === 'sheet' &&
+      dirty &&
+      !window.confirm('Discard unsaved changes and create a new report?')
+    )
+      return;
+    setBusy(true);
+    setError('');
+    const data = Object.fromEntries(new FormData(e.currentTarget));
+    if (type === 'sheet') {
+      if (data.last_slot) {
+        data.end = addMinutesToTime(data.last_slot, 30);
+        delete data.last_slot;
+      }
+      data.dialer_ids = selected;
+    }
+    try {
+      const result = await send(
+        type === 'sheet' ? '/sheets' : type === 'campaign' ? '/campaigns' : '/dialers',
+        data,
+      );
+      await onCreated(type, result);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (type === 'help')
+    return (
+      <Modal
+        title="Your reporting workspace"
+        subtitle="A quick guide to daily operations."
+        close={close}
+      >
+        <div className="guide">
+          {[
+            [
+              '01',
+              'Choose dates',
+              'Use the date picker to view today, this week, this month, or a custom range. Overview totals include every report in that range.',
+            ],
+            [
+              '02',
+              'Record your spend',
+              'Open a daily report and enter each interval amount. Totals update immediately. Blank means not reported; zero is a confirmed zero. Save changes to store the entries.',
+            ],
+            [
+              '03',
+              'Add rows and download',
+              'Add a new or existing dialer directly to a campaign in the report. Download report exports the spreadsheet; Download range exports all interval records for the selected dates.',
+            ],
+          ].map(([n, title, body]) => (
+            <div key={n}>
+              <span>{n}</span>
+              <section>
+                <b>{title}</b>
+                <p>{body}</p>
+              </section>
+            </div>
+          ))}
+        </div>
+      </Modal>
+    );
+  return (
+    <Modal
+      className={type === 'sheet' ? 'daily-report-modal' : ''}
+      title={
+        type === 'sheet' ? 'New daily report' : type === 'campaign' ? 'New campaign' : 'New dialer'
+      }
+      subtitle={
+        type === 'sheet'
+          ? 'Select the shift and dialers for this report.'
+          : 'Organize your reporting directory.'
+      }
+      close={() => {
+        if (!busy) close();
+      }}
+    >
+      <form onSubmit={submit}>
+        {type === 'sheet' ? (
+          <>
+            <label>
+              Report name
+              <input name="name" defaultValue="Balitech · VoIP report" required maxLength={100} />
+            </label>
+            <div className="form-row">
+              <label>
+                Shift start date
+                <input type="date" name="report_date" defaultValue={today()} required />
+              </label>
+              <label>
+                Timezone
+                <input value="US Eastern (EST / EDT)" readOnly />
+              </label>
+            </div>
+            <div className="form-row">
+              <label>
+                First column (Start time)
+                <select name="start" defaultValue={DEFAULT_SHIFT_START} required>
+                  {HALF_HOUR_TIMES.map((t) => (
+                    <option key={t} value={t}>
+                      {clockLabel(t)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Last column (End time)
+                <select name="last_slot" defaultValue={DEFAULT_SHIFT_LAST_SLOT} required>
+                  {HALF_HOUR_TIMES.map((t) => (
+                    <option key={t} value={t}>
+                      {clockLabel(t)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className="field-hint">
+              Default is 6:30 PM to 5:00 AM. You can also adjust the time range later directly from
+              the report.
+            </p>
+            <div className="dialer-select-title">
+              <b>
+                Include dialers <span className="count-chip">{selected.length}</span>
+              </b>
+              <button
+                className="text-btn"
+                type="button"
+                onClick={() =>
+                  setSelected(
+                    selected.length === catalog.dialers.length
+                      ? []
+                      : catalog.dialers.map((d) => d.id),
+                  )
+                }
+              >
+                {selected.length === catalog.dialers.length ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
+            <div className="dialer-picker">
+              {catalog.campaigns.map((c) => {
+                const dialers = catalog.dialers.filter((d) => d.campaign_id === c.id);
+                const campaignIds = new Set(dialers.map((d) => d.id));
+                const selectedCount = dialers.filter((d) => selected.includes(d.id)).length;
+                return (
+                  <div className="campaign-picker-row" key={c.id}>
+                    <label className="checkbox-label campaign-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={dialers.length > 0 && selectedCount === dialers.length}
+                        disabled={!dialers.length}
+                        ref={(input) => {
+                          if (input)
+                            input.indeterminate =
+                              selectedCount > 0 && selectedCount < dialers.length;
+                        }}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setSelected((prev) =>
+                            checked
+                              ? [...new Set([...prev, ...campaignIds])]
+                              : prev.filter((id) => !campaignIds.has(id)),
+                          );
+                        }}
+                      />
+                      <span className="campaign-picker-heading">
+                        <b>{c.name}</b>
+                        <span
+                          className="campaign-picker-count"
+                          title={`${selectedCount} of ${dialers.length} dialers selected`}
+                        >
+                          {selectedCount}/{dialers.length}
+                        </span>
+                      </span>
+                    </label>
+                    <div className="campaign-picker-dialers">
+                      {dialers.map((d) => (
+                        <label
+                          className={`checkbox-label dialer-choice${selected.includes(d.id) ? ' is-selected' : ''}`}
+                          key={d.id}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(d.id)}
+                            onChange={(e) =>
+                              setSelected((prev) =>
+                                e.target.checked
+                                  ? [...prev, d.id]
+                                  : prev.filter((id) => id !== d.id),
+                              )
+                            }
+                          />
+                          <span>{d.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <>
+            <label>
+              {type === 'campaign' ? 'Campaign name' : 'Dialer name'}
+              <input
+                name="name"
+                required
+                maxLength={100}
+                placeholder={type === 'campaign' ? 'e.g. ACA Outbound' : 'e.g. ACA_Balitech_i7'}
+              />
+            </label>
+            {type === 'campaign' ? (
+              <label>
+                Campaign color
+                <input type="color" name="color" defaultValue="#7557de" />
+              </label>
+            ) : (
+              <label>
+                Campaign
+                <select
+                  name="campaign_id"
+                  defaultValue={modal.campaignId || catalog.campaigns[0]?.id}
+                  required
+                >
+                  {catalog.campaigns.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </>
+        )}
+        {error && (
+          <div className="error" role="alert">
+            {error}
+          </div>
+        )}
+        <div className="modal-actions">
+          <button type="button" className="secondary" disabled={busy} onClick={close}>
+            Cancel
+          </button>
+          <button className="primary" disabled={busy || (type === 'sheet' && !selected.length)}>
+            {busy ? <LoaderCircle size={15} className="spin" /> : <Plus size={15} />}{' '}
+            {type === 'sheet'
+              ? 'Create report'
+              : type === 'campaign'
+                ? 'Create campaign'
+                : 'Add dialer'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}

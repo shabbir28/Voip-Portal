@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeSlots, summarize } from '../server/model.js';
+import { makeSlots, summarize } from '../backend/model.js';
 test('night shift has 22 half-hour slots (6:30 PM to 5:00 AM) and rolls over midnight', () => {
   const slots = makeSlots();
   assert.equal(slots.length, 22);

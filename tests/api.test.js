@@ -1,15 +1,15 @@
 import { verifyReportOwnership } from './report-ownership-api.js';
-import 'dotenv/config';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
 import request from 'supertest';
-import { createApp } from '../server/app.js';
-import { migrate } from '../server/db.js';
+import { createApp } from '../backend/app.js';
+import { migrate } from '../backend/db.js';
 import { verifyVendorApi } from './vendor-api.js';
 import { verifyVendorNegativeApi } from './vendor-negative-api.js';
 import { verifyRoles } from './roles-api.js';
 import { verifyUserEditing } from './user-editing-api.js';
+import { verifyConnectivoApi } from './connectivo-api.js';
 test('PostgreSQL authentication, reporting, validation and concurrent edits', async (t) => {
   const connection = {
     host: process.env.DB_HOST,
@@ -30,6 +30,9 @@ test('PostgreSQL authentication, reporting, validation and concurrent edits', as
     await t.test('private endpoints require authentication', async () => {
       assert.equal((await agent.get('/api/catalog')).status, 401);
       assert.equal((await agent.get('/api/vendors')).status, 401);
+      assert.equal((await agent.get('/api/auto-voip/status')).status, 401);
+      assert.equal((await agent.get('/api/auto-voip/reports')).status, 401);
+      assert.equal((await agent.get('/api/auto-voip/reports/1')).status, 401);
       assert.equal(
         (await agent.get('/api/vendor-reports?from=2026-10-20&to=2026-10-20')).status,
         401,
@@ -447,6 +450,7 @@ test('PostgreSQL authentication, reporting, validation and concurrent edits', as
     await verifyRoles(t, app, agent, mutate, db);
     await verifyReportOwnership(t, app, agent, mutate);
     await verifyUserEditing(t, app, agent, mutate, db);
+    await verifyConnectivoApi(t, db);
     await t.test('logout revokes session and login validates passwords', async () => {
       assert.equal((await mutate('post', '/api/logout', {})).status, 200);
       assert.equal((await agent.get('/api/me')).status, 401);
